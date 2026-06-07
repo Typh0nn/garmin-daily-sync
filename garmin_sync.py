@@ -50,16 +50,17 @@ def garmin_auth() -> Garmin:
 # ─── GITHUB HELPERS ────────────────────────────────────────────────────────────
 
 def gh_read(repo, path: str) -> tuple[list, str | None]:
+    f = None
     try:
         f = repo.get_contents(path)
-        content = f.decoded_content.decode("utf-8").strip()
+        content = f.decoded_content.decode("utf-8-sig").strip()  # utf-8-sig usuwa BOM
         if not content:
             return [], f.sha          # plik istnieje ale pusty
         return json.loads(content), f.sha
     except json.JSONDecodeError:
-        return [], None               # plik istnieje ale nieprawidłowy JSON
+        return [], f.sha if f else None   # plik istnieje (zły JSON) → zachowaj sha do update
     except GithubException:
-        return [], None               # plik nie istnieje
+        return [], None                   # plik nie istnieje
 
 def gh_write(repo, path: str, data: list, sha: str | None, message: str):
     content = json.dumps(data, ensure_ascii=False, indent=2)
