@@ -11,7 +11,6 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
-      secrets: write
 
     steps:
       - uses: actions/checkout@v4
@@ -27,7 +26,5 @@ jobs:
         env:
           GARMIN_EMAIL:    ${{ secrets.GARMIN_EMAIL }}
           GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
-          GARMIN_TOKENS:   ${{ secrets.GARMIN_TOKENS }}
           GITHUB_TOKEN:    ${{ secrets.GITHUB_TOKEN }}
-          GH_TOKEN:        ${{ secrets.GITHUB_TOKEN }}
         run: python garmin_sync.py --mode morning

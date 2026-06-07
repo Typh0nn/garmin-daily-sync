@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-garmin_sync.py v3 — garminconnect + token cache w GitHub Secrets
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+garmin_sync.py v4 — garminconnect → GitHub JSON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Tryby:
   --mode morning   wczorajszy sen + dzisiejsze BB rano
   --mode evening   dzisiejszy intraday 30-min
@@ -11,17 +11,14 @@ Env vars (automatyczne w Actions):
 
 Env vars (sekrety ręczne):
   GARMIN_EMAIL, GARMIN_PASSWORD
-  GARMIN_TOKENS   (opcjonalny — cache tokenów, skrypt sam go ustawia)
 """
 
 import argparse
-import base64
 import json
-import os
-import subprocess
 import sys
 from collections import defaultdict
 from datetime import date, datetime, timedelta
+import os
 
 from garminconnect import Garmin, GarminConnectAuthenticationError
 from github import Github, GithubException
@@ -30,65 +27,21 @@ from github import Github, GithubException
 
 REPO_NAME     = os.environ["GITHUB_REPOSITORY"]
 GH_TOKEN      = os.environ["GITHUB_TOKEN"]
-TOKEN_FILE    = "/tmp/garmin_tokens.json"
-
 DAILY_FILE    = "data/daily.json"
 INTRADAY_FILE = "data/intraday.json"
 MAX_DAILY     = 30
 MAX_INTRADAY  = 7
 
-# ─── GARMIN AUTH (z cache tokenów) ────────────────────────────────────────────
-
-def save_tokens_to_secret(api: Garmin):
-    """Zapisz tokeny jako GitHub Secret GARMIN_TOKENS — reużywane przy kolejnych runach."""
-    try:
-        token_data = {
-            "oauth1": api.garth.oauth1_token.dict() if api.garth.oauth1_token else None,
-            "oauth2": api.garth.oauth2_token.dict() if api.garth.oauth2_token else None,
-        }
-        encoded = base64.b64encode(json.dumps(token_data).encode()).decode()
-
-        # Użyj GitHub CLI do ustawienia sekretu
-        result = subprocess.run(
-            ["gh", "secret", "set", "GARMIN_TOKENS",
-             "--repo", REPO_NAME,
-             "--body", encoded],
-            capture_output=True, text=True
-        )
-        if result.returncode == 0:
-            print("Tokeny zapisane do GitHub Secret GARMIN_TOKENS")
-        else:
-            print(f"Nie udało się zapisać tokenów: {result.stderr}")
-    except Exception as e:
-        print(f"Zapis tokenów pominięty: {e}")
-
+# ─── AUTH ──────────────────────────────────────────────────────────────────────
 
 def garmin_auth() -> Garmin:
-    """Zaloguj przez tokeny (cache) lub email/hasło (pierwsze uruchomienie)."""
-    api = Garmin()
-
-    # Próba 1: użyj cached tokenów z env
-    cached = os.environ.get("GARMIN_TOKENS", "")
-    if cached:
-        try:
-            token_data = json.loads(base64.b64decode(cached).decode())
-            api.garth.oauth1_token = token_data.get("oauth1")
-            api.garth.oauth2_token = token_data.get("oauth2")
-            api.display_name  # test czy sesja działa
-            print("Garmin: zalogowano z tokenów (cache)")
-            return api
-        except Exception:
-            print("Garmin: tokeny wygasły, loguję ponownie...")
-
-    # Próba 2: email/hasło
     try:
         api = Garmin(
             email=os.environ["GARMIN_EMAIL"],
             password=os.environ["GARMIN_PASSWORD"],
         )
         api.login()
-        print("Garmin: zalogowano przez email/hasło")
-        save_tokens_to_secret(api)
+        print("Garmin: zalogowano OK")
         return api
     except GarminConnectAuthenticationError as e:
         print(f"Błąd logowania Garmin: {e}")
@@ -103,7 +56,6 @@ def gh_read(repo, path: str) -> tuple[list, str | None]:
     except GithubException:
         return [], None
 
-
 def gh_write(repo, path: str, data: list, sha: str | None, message: str):
     content = json.dumps(data, ensure_ascii=False, indent=2)
     if sha:
@@ -116,8 +68,8 @@ def gh_write(repo, path: str, data: list, sha: str | None, message: str):
 
 def fetch_sleep(api: Garmin, date_str: str) -> dict:
     try:
-        data = api.get_sleep_data(date_str)
-        dto  = data.get("dailySleepDTO", {})
+        data  = api.get_sleep_data(date_str)
+        dto   = data.get("dailySleepDTO", {})
         score = dto.get("sleepScores", {}).get("overall", {}).get("value")
         return {
             "sleep_score":    score,
@@ -134,7 +86,6 @@ def fetch_sleep(api: Garmin, date_str: str) -> dict:
         print(f"[BŁĄD] sleep ({date_str}): {e}")
         return {}
 
-
 def fetch_body_battery(api: Garmin, date_str: str) -> list[dict]:
     try:
         data = api.get_body_battery(date_str)
@@ -142,15 +93,11 @@ def fetch_body_battery(api: Garmin, date_str: str) -> list[dict]:
         for day in (data if isinstance(data, list) else [data]):
             for e in day.get("bodyBatteryValuesArray", []):
                 if len(e) >= 2 and e[1] is not None:
-                    out.append({
-                        "time": datetime.fromtimestamp(e[0] / 1000),
-                        "bb":   e[1],
-                    })
+                    out.append({"time": datetime.fromtimestamp(e[0] / 1000), "bb": e[1]})
         return sorted(out, key=lambda x: x["time"])
     except Exception as e:
         print(f"[BŁĄD] body battery ({date_str}): {e}")
         return []
-
 
 def fetch_stress(api: Garmin, date_str: str) -> list[dict]:
     try:
@@ -158,15 +105,11 @@ def fetch_stress(api: Garmin, date_str: str) -> list[dict]:
         out  = []
         for e in data.get("stressValuesArray", []):
             if len(e) >= 2 and e[1] >= 0:
-                out.append({
-                    "time":   datetime.fromtimestamp(e[0] / 1000),
-                    "stress": e[1],
-                })
+                out.append({"time": datetime.fromtimestamp(e[0] / 1000), "stress": e[1]})
         return sorted(out, key=lambda x: x["time"])
     except Exception as e:
         print(f"[BŁĄD] stress ({date_str}): {e}")
         return []
-
 
 def fetch_heart_rate(api: Garmin, date_str: str) -> list[dict]:
     try:
@@ -174,15 +117,11 @@ def fetch_heart_rate(api: Garmin, date_str: str) -> list[dict]:
         out  = []
         for e in data.get("heartRateValues", []):
             if e and len(e) >= 2 and e[1] and e[1] > 0:
-                out.append({
-                    "time": datetime.fromtimestamp(e[0] / 1000),
-                    "hr":   e[1],
-                })
+                out.append({"time": datetime.fromtimestamp(e[0] / 1000), "hr": e[1]})
         return sorted(out, key=lambda x: x["time"])
     except Exception as e:
         print(f"[BŁĄD] heart rate ({date_str}): {e}")
         return []
-
 
 def aggregate_30min(bb_data, stress_data, hr_data, date_str: str) -> list[dict]:
     target = datetime.strptime(date_str, "%Y-%m-%d").date()
@@ -226,7 +165,7 @@ def run_morning(api: Garmin, repo):
     bb_morning = bb_today[0]["bb"] if bb_today else None
 
     daily, sha = gh_read(repo, DAILY_FILE)
-    daily = [d for d in daily if d.get("date") != yesterday]
+    daily      = [d for d in daily if d.get("date") != yesterday]
     daily.append({
         "date": yesterday, **sleep,
         "bb_morning": bb_morning,
@@ -236,7 +175,6 @@ def run_morning(api: Garmin, repo):
     gh_write(repo, DAILY_FILE, daily, sha,
              f"morning: sen {yesterday}, BB_rano={bb_morning}")
     print(f"sleep={sleep.get('sleep_score')}, HRV={sleep.get('hrv_last_night')}, BB_rano={bb_morning}")
-
 
 # ─── TRYB: EVENING ─────────────────────────────────────────────────────────────
 
@@ -252,21 +190,19 @@ def run_evening(api: Garmin, repo):
         today,
     )
 
-    # Intraday JSON
     intraday, sha_i = gh_read(repo, INTRADAY_FILE)
     intraday = [r for r in intraday if r.get("date") != today and r.get("date","") >= cutoff]
     intraday = sorted(intraday + blocks, key=lambda x: (x["date"], x["time"]))
     gh_write(repo, INTRADAY_FILE, intraday, sha_i,
              f"evening: intraday {today} ({len(blocks)} bloków)")
 
-    # Uzupełnij daily
-    bb_vals  = [b["bb"]         for b in blocks if b["bb"]         is not None]
-    s_avgs   = [b["stress_avg"] for b in blocks if b["stress_avg"] is not None]
-    s_maxes  = [b["stress_max"] for b in blocks if b["stress_max"] is not None]
+    bb_vals = [b["bb"]         for b in blocks if b["bb"]         is not None]
+    s_avgs  = [b["stress_avg"] for b in blocks if b["stress_avg"] is not None]
+    s_maxes = [b["stress_max"] for b in blocks if b["stress_max"] is not None]
 
-    bb_eve   = bb_vals[-1]                           if bb_vals  else None
-    s_avg    = round(sum(s_avgs) / len(s_avgs))      if s_avgs   else None
-    s_max    = max(s_maxes)                           if s_maxes  else None
+    bb_eve  = bb_vals[-1]                          if bb_vals  else None
+    s_avg   = round(sum(s_avgs) / len(s_avgs))    if s_avgs   else None
+    s_max   = max(s_maxes)                         if s_maxes  else None
 
     daily, sha_d = gh_read(repo, DAILY_FILE)
     idx = next((i for i, d in enumerate(daily) if d.get("date") == today), None)
@@ -280,7 +216,6 @@ def run_evening(api: Garmin, repo):
              f"evening: BB_wie={bb_eve}, stress_avg={s_avg}")
     print(f"BB {bb_vals[0] if bb_vals else '?'}→{bb_eve}, stress avg={s_avg}, max={s_max}")
 
-
 # ─── ENTRY POINT ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
@@ -289,8 +224,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     api  = garmin_auth()
-    g    = Github(GH_TOKEN)
-    repo = g.get_repo(REPO_NAME)
+    repo = Github(GH_TOKEN).get_repo(REPO_NAME)
 
     if args.mode == "morning":
         run_morning(api, repo)
