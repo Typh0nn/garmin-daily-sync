@@ -2,7 +2,7 @@ name: Garmin Evening Sync
 
 on:
   schedule:
-    - cron: '0 18 * * *'   # 20:00 CEST (UTC+2 lato) | 19:00 CET (UTC+1 zima)
+    - cron: '0 18 * * *'
   workflow_dispatch:
 
 jobs:
@@ -20,11 +20,22 @@ jobs:
           python-version: '3.11'
 
       - name: Instalacja zależności
-        run: pip install garth PyGithub
+        run: pip install garminconnect PyGithub
+
+      - name: Instalacja GitHub CLI
+        run: |
+          type -p curl >/dev/null || apt-get install curl -y
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          apt-get update
+          apt-get install gh -y
 
       - name: Evening sync
         env:
-          GARMIN_EMAIL:      ${{ secrets.GARMIN_EMAIL }}
-          GARMIN_PASSWORD:   ${{ secrets.GARMIN_PASSWORD }}
-          GITHUB_TOKEN:      ${{ secrets.GITHUB_TOKEN }}
+          GARMIN_EMAIL:    ${{ secrets.GARMIN_EMAIL }}
+          GARMIN_PASSWORD: ${{ secrets.GARMIN_PASSWORD }}
+          GARMIN_TOKENS:   ${{ secrets.GARMIN_TOKENS }}
+          GITHUB_TOKEN:    ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN:        ${{ secrets.GITHUB_TOKEN }}
         run: python garmin_sync.py --mode evening
