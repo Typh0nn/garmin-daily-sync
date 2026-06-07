@@ -1,103 +1,88 @@
 #!/usr/bin/env python3
 """
-garmin_sync.py — Garmin Connect → Google Sheets
+garmin_sync.py v2 — Garmin Connect → GitHub JSON
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Tryby:
-  --mode morning   wczorajszy sen + dzisiejsze BB o poranku → zakładka Daily
-  --mode evening   dzisiejszy intraday 30-min → zakładka Intraday + uzupełnienie Daily
+  --mode morning   wczorajszy sen + dzisiejsze BB rano → data/daily.json
+  --mode evening   dzisiejszy intraday 30-min         → data/intraday.json
+                                                       + uzupełnienie daily.json
 
-Env vars wymagane:
-  GARMIN_EMAIL, GARMIN_PASSWORD
-  GSHEET_CREDENTIALS  (JSON service account jako string)
-  GSHEET_ID           (ID arkusza Google Sheets)
+Env vars (automatyczne w GitHub Actions):
+  GITHUB_TOKEN        — nadawany automatycznie przez Actions
+  GITHUB_REPOSITORY   — nadawany automatycznie (np. "Typh0nn/garmin-daily-sync")
+
+Env vars (sekrety ręczne):
+  GARMIN_EMAIL
+  GARMIN_PASSWORD
 """
 
 import argparse
 import json
 import os
-import sys
 from collections import defaultdict
 from datetime import date, datetime, timedelta
 
 import garth
-import gspread
-from google.oauth2.service_account import Credentials
+from github import Github, GithubException
 
 # ─── CONFIG ────────────────────────────────────────────────────────────────────
 
-GSHEET_ID = os.environ["GSHEET_ID"]
+REPO_NAME      = os.environ["GITHUB_REPOSITORY"]   # "Typh0nn/garmin-daily-sync"
+GH_TOKEN       = os.environ["GITHUB_TOKEN"]
 
-GSCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive",
-]
+DAILY_FILE     = "data/daily.json"
+INTRADAY_FILE  = "data/intraday.json"
 
-DAILY_HEADERS = [
-    "Date", "Sleep Score", "Deep (min)", "Light (min)", "REM (min)",
-    "Awake (min)", "HRV last night", "HRV weekly avg",
-    "RHR", "SpO2 avg", "BB morning", "BB evening",
-    "Stress avg day", "Stress max day",
-]
+MAX_DAILY      = 30   # przechowuj ostatnie N dni w daily.json
+MAX_INTRADAY   = 7    # przechowuj ostatnie N dni w intraday.json
 
-INTRADAY_HEADERS = [
-    "Date", "Time", "BB", "Stress avg", "Stress max", "HR avg",
-]
+# ─── GITHUB HELPERS ────────────────────────────────────────────────────────────
 
-# ─── AUTH ──────────────────────────────────────────────────────────────────────
+def gh_read(repo, path: str) -> tuple[list, str | None]:
+    """Wczytaj JSON z repo. Zwraca (data, sha) lub ([], None) jeśli brak."""
+    try:
+        f = repo.get_contents(path)
+        return json.loads(f.decoded_content.decode("utf-8")), f.sha
+    except GithubException:
+        return [], None
+
+
+def gh_write(repo, path: str, data: list, sha: str | None, message: str):
+    """Zapisz JSON do repo (create lub update)."""
+    content = json.dumps(data, ensure_ascii=False, indent=2)
+    if sha:
+        repo.update_file(path, message, content, sha)
+    else:
+        repo.create_file(path, message, content)
+    print(f"GitHub: zapisano '{path}' ({len(data)} rekordów)")
+
+# ─── GARMIN AUTH ───────────────────────────────────────────────────────────────
 
 def garmin_auth():
-    """Login z email/hasło. Tokeny cache'owane w /tmp/garth."""
     token_dir = "/tmp/garth"
     os.makedirs(token_dir, exist_ok=True)
     try:
         garth.resume(token_dir)
-        # Szybki test że sesja działa
-        garth.connectapi("/wellness-service/wellness/heartRate/" + date.today().strftime("%Y-%m-%d"))
-        print("Garmin: sesja wznowiona z tokenów")
+        garth.connectapi(
+            "/wellness-service/wellness/dailyHeartRate/"
+            + date.today().strftime("%Y-%m-%d")
+        )
+        print("Garmin: sesja wznowiona")
     except Exception:
-        print("Garmin: logowanie przez email/hasło...")
+        print("Garmin: loguję przez email/hasło...")
         garth.login(os.environ["GARMIN_EMAIL"], os.environ["GARMIN_PASSWORD"])
         garth.save(token_dir)
-        print("Garmin: zalogowano OK")
-
-
-def gsheets_client() -> gspread.Client:
-    """Zwraca autoryzowanego klienta gspread z service account."""
-    info = json.loads(os.environ["GSHEET_CREDENTIALS"])
-    creds = Credentials.from_service_account_info(info, scopes=GSCOPES)
-    return gspread.authorize(creds)
-
-# ─── SHEET HELPERS ─────────────────────────────────────────────────────────────
-
-def get_or_create_ws(ss, title: str, headers: list) -> gspread.Worksheet:
-    """Pobierz lub utwórz zakładkę z nagłówkami."""
-    try:
-        return ss.worksheet(title)
-    except gspread.WorksheetNotFound:
-        ws = ss.add_worksheet(title=title, rows=5000, cols=max(len(headers) + 2, 10))
-        ws.append_row(headers, value_input_option="RAW")
-        print(f"Zakładka '{title}' utworzona")
-        return ws
-
-
-def find_row(ws, date_str: str) -> int | None:
-    """Zwróć numer wiersza (1-based) dla daty lub None."""
-    col = ws.col_values(1)
-    for i, val in enumerate(col):
-        if val == date_str:
-            return i + 1
-    return None
+        print("Garmin: OK")
 
 # ─── GARMIN FETCHERS ───────────────────────────────────────────────────────────
 
 def fetch_sleep(date_str: str) -> dict:
-    """Pobierz podsumowanie snu dla daty (YYYY-MM-DD)."""
     try:
         resp = garth.connectapi(
             f"/wellness-service/wellness/dailySleepData/{date_str}",
             params={"nonSleepBufferMinutes": 60},
         )
-        dto = resp.get("dailySleepDTO", {})
+        dto  = resp.get("dailySleepDTO", {})
         score = dto.get("sleepScores", {}).get("overall", {}).get("value")
         return {
             "sleep_score":    score,
@@ -107,16 +92,15 @@ def fetch_sleep(date_str: str) -> dict:
             "awake_min":      round((dto.get("awakeSleepSeconds") or 0) / 60),
             "hrv_last_night": dto.get("lastNight"),
             "hrv_weekly_avg": dto.get("hrvWeeklyAverage"),
-            "resting_hr":     dto.get("restingHeartRate"),
+            "rhr":            dto.get("restingHeartRate"),
             "spo2_avg":       round(dto.get("averageSpO2Value") or 0) or None,
         }
     except Exception as e:
-        print(f"[BŁĄD] Sleep ({date_str}): {e}")
+        print(f"[BŁĄD] sleep ({date_str}): {e}")
         return {}
 
 
 def fetch_body_battery(date_str: str) -> list[dict]:
-    """Pobierz odczyty Body Battery (timestamp + wartość)."""
     try:
         resp = garth.connectapi(
             "/wellness-service/wellness/bodyBattery",
@@ -124,58 +108,42 @@ def fetch_body_battery(date_str: str) -> list[dict]:
         )
         out = []
         for day in resp:
-            for entry in day.get("bodyBatteryValuesArray", []):
-                if len(entry) >= 2 and entry[1] is not None:
-                    out.append({
-                        "time": datetime.fromtimestamp(entry[0] / 1000),
-                        "bb":   entry[1],
-                    })
+            for e in day.get("bodyBatteryValuesArray", []):
+                if len(e) >= 2 and e[1] is not None:
+                    out.append({"time": datetime.fromtimestamp(e[0] / 1000), "bb": e[1]})
         return sorted(out, key=lambda x: x["time"])
     except Exception as e:
-        print(f"[BŁĄD] Body Battery ({date_str}): {e}")
+        print(f"[BŁĄD] body battery ({date_str}): {e}")
         return []
 
 
 def fetch_stress(date_str: str) -> list[dict]:
-    """Pobierz stres intraday (co ~3 min, -1 = brak danych)."""
     try:
-        resp = garth.connectapi(
-            f"/wellness-service/wellness/dailyStress/{date_str}"
-        )
+        resp = garth.connectapi(f"/wellness-service/wellness/dailyStress/{date_str}")
         out = []
-        for entry in resp.get("stressValuesArray", []):
-            if len(entry) >= 2 and entry[1] >= 0:
-                out.append({
-                    "time":   datetime.fromtimestamp(entry[0] / 1000),
-                    "stress": entry[1],
-                })
+        for e in resp.get("stressValuesArray", []):
+            if len(e) >= 2 and e[1] >= 0:
+                out.append({"time": datetime.fromtimestamp(e[0] / 1000), "stress": e[1]})
         return sorted(out, key=lambda x: x["time"])
     except Exception as e:
-        print(f"[BŁĄD] Stress ({date_str}): {e}")
+        print(f"[BŁĄD] stress ({date_str}): {e}")
         return []
 
 
 def fetch_heart_rate(date_str: str) -> list[dict]:
-    """Pobierz tętno intraday."""
     try:
-        resp = garth.connectapi(
-            f"/wellness-service/wellness/dailyHeartRate/{date_str}"
-        )
+        resp = garth.connectapi(f"/wellness-service/wellness/dailyHeartRate/{date_str}")
         out = []
-        for entry in resp.get("heartRateValues", []):
-            if entry and len(entry) >= 2 and entry[1] and entry[1] > 0:
-                out.append({
-                    "time": datetime.fromtimestamp(entry[0] / 1000),
-                    "hr":   entry[1],
-                })
+        for e in resp.get("heartRateValues", []):
+            if e and len(e) >= 2 and e[1] and e[1] > 0:
+                out.append({"time": datetime.fromtimestamp(e[0] / 1000), "hr": e[1]})
         return sorted(out, key=lambda x: x["time"])
     except Exception as e:
-        print(f"[BŁĄD] Heart Rate ({date_str}): {e}")
+        print(f"[BŁĄD] heart rate ({date_str}): {e}")
         return []
 
 
 def aggregate_30min(bb_data, stress_data, hr_data, date_str: str) -> list[dict]:
-    """Agreguj odczyty intraday do bloków 30-minutowych."""
     target = datetime.strptime(date_str, "%Y-%m-%d").date()
     blocks: dict = defaultdict(lambda: {"bb": [], "stress": [], "hr": []})
 
@@ -185,11 +153,9 @@ def aggregate_30min(bb_data, stress_data, hr_data, date_str: str) -> list[dict]:
     for r in bb_data:
         if r["time"].date() == target:
             blocks[slot(r["time"])]["bb"].append(r["bb"])
-
     for r in stress_data:
         if r["time"].date() == target:
             blocks[slot(r["time"])]["stress"].append(r["stress"])
-
     for r in hr_data:
         if r["time"].date() == target:
             blocks[slot(r["time"])]["hr"].append(r["hr"])
@@ -209,125 +175,107 @@ def aggregate_30min(bb_data, stress_data, hr_data, date_str: str) -> list[dict]:
 
 # ─── TRYB: MORNING ─────────────────────────────────────────────────────────────
 
-def run_morning(gc: gspread.Client):
-    """Wczorajszy sen + dzisiejsze BB o poranku → zakładka Daily."""
+def run_morning(repo):
     yesterday = (date.today() - timedelta(days=1)).strftime("%Y-%m-%d")
     today     = date.today().strftime("%Y-%m-%d")
+    print(f"[MORNING] sen={yesterday}, BB_rano={today}")
 
-    print(f"[MORNING] Sen: {yesterday} | BB otwarcie: {today}")
-
-    sleep     = fetch_sleep(yesterday)
-    bb_today  = fetch_body_battery(today)
+    sleep      = fetch_sleep(yesterday)
+    bb_today   = fetch_body_battery(today)
     bb_morning = bb_today[0]["bb"] if bb_today else None
 
-    ss = gc.open_by_key(GSHEET_ID)
-    ws = get_or_create_ws(ss, "Daily", DAILY_HEADERS)
+    daily, sha = gh_read(repo, DAILY_FILE)
 
-    row = [
-        yesterday,
-        sleep.get("sleep_score"),
-        sleep.get("deep_min"),
-        sleep.get("light_min"),
-        sleep.get("rem_min"),
-        sleep.get("awake_min"),
-        sleep.get("hrv_last_night"),
-        sleep.get("hrv_weekly_avg"),
-        sleep.get("resting_hr"),
-        sleep.get("spo2_avg"),
-        bb_morning,   # col 11 — BB morning
-        None,         # col 12 — BB evening (uzupełni evening run)
-        None,         # col 13 — Stress avg day
-        None,         # col 14 — Stress max day
-    ]
+    # Usuń ewentualny stary wpis dla yesterday (idempotentne)
+    daily = [d for d in daily if d.get("date") != yesterday]
 
-    existing = find_row(ws, yesterday)
-    if existing:
-        ws.update(f"A{existing}", [row], value_input_option="RAW")
-        print(f"Zaktualizowano wiersz {existing} dla {yesterday}")
-    else:
-        ws.append_row(row, value_input_option="RAW")
-        print(f"Dodano nowy wiersz dla {yesterday}")
+    new_entry = {
+        "date":         yesterday,
+        **sleep,
+        "bb_morning":   bb_morning,
+        "bb_evening":   None,        # uzupełni evening run
+        "stress_avg_day": None,
+        "stress_max_day": None,
+    }
+    daily.append(new_entry)
 
-    print(f"Wynik: sleep={sleep.get('sleep_score')}, "
-          f"HRV={sleep.get('hrv_last_night')}, BB_rano={bb_morning}")
+    # Zostaw tylko ostatnie MAX_DAILY dni
+    daily = sorted(daily, key=lambda x: x["date"])[-MAX_DAILY:]
+
+    gh_write(repo, DAILY_FILE, daily, sha,
+             f"morning sync: sen {yesterday}, BB rano {bb_morning}")
+    print(f"Wynik: sleep={sleep.get('sleep_score')}, HRV={sleep.get('hrv_last_night')}, BB_rano={bb_morning}")
+
 
 # ─── TRYB: EVENING ─────────────────────────────────────────────────────────────
 
-def run_evening(gc: gspread.Client):
-    """Dzisiejszy intraday (30-min bloki) → Intraday + uzupełnienie Daily."""
+def run_evening(repo):
     today = date.today().strftime("%Y-%m-%d")
-    print(f"[EVENING] Intraday: {today}")
+    print(f"[EVENING] intraday={today}")
 
     bb_data     = fetch_body_battery(today)
     stress_data = fetch_stress(today)
     hr_data     = fetch_heart_rate(today)
     blocks      = aggregate_30min(bb_data, stress_data, hr_data, today)
 
-    ss = gc.open_by_key(GSHEET_ID)
+    # ── Intraday JSON ────────────────────────────────────────────────────────
+    intraday, sha_intra = gh_read(repo, INTRADAY_FILE)
 
-    # ── Zakładka Intraday ────────────────────────────────────────────────────
-    ws_intra = get_or_create_ws(ss, "Intraday", INTRADAY_HEADERS)
+    # Usuń dzisiejsze wpisy (idempotentne), dodaj nowe
+    cutoff   = (date.today() - timedelta(days=MAX_INTRADAY)).strftime("%Y-%m-%d")
+    intraday = [r for r in intraday if r.get("date") != today and r.get("date", "") >= cutoff]
+    intraday.extend(blocks)
+    intraday = sorted(intraday, key=lambda x: (x["date"], x["time"]))
 
-    # Usuń dzisiejsze wiersze (idempotentne re-run)
-    all_vals = ws_intra.get_all_values()
-    keep = [r for r in all_vals if r and r[0] != today]
-    ws_intra.clear()
-    if keep:
-        ws_intra.update("A1", keep, value_input_option="RAW")
+    gh_write(repo, INTRADAY_FILE, intraday, sha_intra,
+             f"evening sync: intraday {today} ({len(blocks)} bloków)")
 
-    rows = [
-        [b["date"], b["time"], b["bb"], b["stress_avg"], b["stress_max"], b["hr_avg"]]
-        for b in blocks
-    ]
-    if rows:
-        ws_intra.append_rows(rows, value_input_option="RAW")
-    print(f"Intraday: {len(blocks)} bloków zapisanych")
-
-    # ── Uzupełnij Daily: BB wieczór + stres dzienny ──────────────────────────
-    ws_daily = get_or_create_ws(ss, "Daily", DAILY_HEADERS)
-
+    # ── Uzupełnij daily.json: BB wieczór + stres ─────────────────────────────
     bb_vals      = [b["bb"]         for b in blocks if b["bb"]         is not None]
     stress_avgs  = [b["stress_avg"] for b in blocks if b["stress_avg"] is not None]
     stress_maxes = [b["stress_max"] for b in blocks if b["stress_max"] is not None]
 
-    bb_evening     = bb_vals[-1]                                         if bb_vals      else None
-    stress_avg_day = round(sum(stress_avgs) / len(stress_avgs))         if stress_avgs  else None
+    bb_evening     = bb_vals[-1]                                         if bb_vals     else None
+    stress_avg_day = round(sum(stress_avgs) / len(stress_avgs))         if stress_avgs else None
     stress_max_day = max(stress_maxes)                                   if stress_maxes else None
 
-    row_idx = find_row(ws_daily, today)
-    if row_idx:
-        # Zaktualizuj kolumny L-N (12-14)
-        ws_daily.update(
-            f"L{row_idx}:N{row_idx}",
-            [[bb_evening, stress_avg_day, stress_max_day]],
-            value_input_option="RAW",
-        )
-        print(f"Daily zaktualizowane: BB_wieczór={bb_evening}, "
-              f"stress_avg={stress_avg_day}, stress_max={stress_max_day}")
-    else:
-        # Morning nie uruchomiony — utwórz minimalny wiersz
-        ws_daily.append_row(
-            [today] + [None] * 10 + [bb_evening, stress_avg_day, stress_max_day],
-            value_input_option="RAW",
-        )
-        print(f"Daily: nowy wiersz dla {today} (tylko evening)")
+    daily, sha_daily = gh_read(repo, DAILY_FILE)
 
-    print("Evening sync zakończony.")
+    # Znajdź lub utwórz wpis dla today
+    idx = next((i for i, d in enumerate(daily) if d.get("date") == today), None)
+    if idx is not None:
+        daily[idx]["bb_evening"]     = bb_evening
+        daily[idx]["stress_avg_day"] = stress_avg_day
+        daily[idx]["stress_max_day"] = stress_max_day
+    else:
+        daily.append({
+            "date":           today,
+            "bb_evening":     bb_evening,
+            "stress_avg_day": stress_avg_day,
+            "stress_max_day": stress_max_day,
+        })
+
+    daily = sorted(daily, key=lambda x: x["date"])[-MAX_DAILY:]
+    gh_write(repo, DAILY_FILE, daily, sha_daily,
+             f"evening sync: BB_wieczór={bb_evening}, stres_avg={stress_avg_day}")
+
+    print(f"Wynik: BB {bb_vals[0] if bb_vals else '?'}→{bb_evening}, "
+          f"stress avg={stress_avg_day}, max={stress_max_day}")
+
 
 # ─── ENTRY POINT ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Garmin → Google Sheets")
-    parser.add_argument(
-        "--mode", choices=["morning", "evening"], required=True,
-        help="morning: sen + BB otwierający | evening: intraday 30-min",
-    )
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--mode", choices=["morning", "evening"], required=True)
     args = parser.parse_args()
 
     garmin_auth()
-    gc = gsheets_client()
+
+    g    = Github(GH_TOKEN)
+    repo = g.get_repo(REPO_NAME)
 
     if args.mode == "morning":
-        run_morning(gc)
+        run_morning(repo)
     else:
-        run_evening(gc)
+        run_evening(repo)

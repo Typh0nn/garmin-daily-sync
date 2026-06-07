@@ -1,0 +1,30 @@
+name: Garmin Evening Sync
+
+on:
+  schedule:
+    - cron: '0 18 * * *'   # 20:00 CEST (UTC+2 lato) | 19:00 CET (UTC+1 zima)
+  workflow_dispatch:
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Instalacja zależności
+        run: pip install garth PyGithub
+
+      - name: Evening sync
+        env:
+          GARMIN_EMAIL:      ${{ secrets.GARMIN_EMAIL }}
+          GARMIN_PASSWORD:   ${{ secrets.GARMIN_PASSWORD }}
+          GITHUB_TOKEN:      ${{ secrets.GITHUB_TOKEN }}
+        run: python garmin_sync.py --mode evening
