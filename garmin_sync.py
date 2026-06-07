@@ -21,7 +21,7 @@ from datetime import date, datetime, timedelta
 import os
 
 from garminconnect import Garmin, GarminConnectAuthenticationError
-from github import Github, GithubException
+from github import Auth, Github, GithubException
 
 # ─── CONFIG ────────────────────────────────────────────────────────────────────
 
@@ -52,9 +52,14 @@ def garmin_auth() -> Garmin:
 def gh_read(repo, path: str) -> tuple[list, str | None]:
     try:
         f = repo.get_contents(path)
-        return json.loads(f.decoded_content.decode("utf-8")), f.sha
+        content = f.decoded_content.decode("utf-8").strip()
+        if not content:
+            return [], f.sha          # plik istnieje ale pusty
+        return json.loads(content), f.sha
+    except json.JSONDecodeError:
+        return [], None               # plik istnieje ale nieprawidłowy JSON
     except GithubException:
-        return [], None
+        return [], None               # plik nie istnieje
 
 def gh_write(repo, path: str, data: list, sha: str | None, message: str):
     content = json.dumps(data, ensure_ascii=False, indent=2)
@@ -224,7 +229,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     api  = garmin_auth()
-    repo = Github(GH_TOKEN).get_repo(REPO_NAME)
+    repo = Github(auth=Auth.Token(GH_TOKEN)).get_repo(REPO_NAME)
 
     if args.mode == "morning":
         run_morning(api, repo)
