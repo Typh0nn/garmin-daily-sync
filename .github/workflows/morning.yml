@@ -2,7 +2,9 @@ name: Garmin Morning Sync
 
 on:
   schedule:
-    - cron: '0 6 * * *'
+    - cron: '0 6 * * *'   # 08:00 CEST
+    - cron: '0 8 * * *'   # 10:00 CEST
+    - cron: '0 10 * * *'  # 12:00 CEST
   workflow_dispatch:
 
 jobs:
