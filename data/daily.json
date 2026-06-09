@@ -46,5 +46,11 @@
     "bb_evening": null,
     "stress_avg_day": null,
     "stress_max_day": null
+  },
+  {
+    "date": "2026-06-09",
+    "bb_evening": 27,
+    "stress_avg_day": 41,
+    "stress_max_day": 97
   }
 ]
