@@ -970,7 +970,7 @@
   {
     "date": "2026-06-10",
     "time": "01:30",
-    "bb": 22,
+    "bb": null,
     "stress_avg": 24,
     "stress_max": 27,
     "hr_avg": 64
@@ -1026,7 +1026,7 @@
   {
     "date": "2026-06-10",
     "time": "05:00",
-    "bb": 44,
+    "bb": null,
     "stress_avg": 20,
     "stress_max": 23,
     "hr_avg": 62
@@ -1034,7 +1034,7 @@
   {
     "date": "2026-06-10",
     "time": "05:30",
-    "bb": 45,
+    "bb": 46,
     "stress_avg": 18,
     "stress_max": 20,
     "hr_avg": 58
@@ -1074,7 +1074,7 @@
   {
     "date": "2026-06-10",
     "time": "08:00",
-    "bb": 57,
+    "bb": null,
     "stress_avg": 23,
     "stress_max": 24,
     "hr_avg": 63
@@ -1091,8 +1091,192 @@
     "date": "2026-06-10",
     "time": "09:00",
     "bb": null,
-    "stress_avg": 27,
+    "stress_avg": 23,
     "stress_max": 30,
+    "hr_avg": 72
+  },
+  {
+    "date": "2026-06-10",
+    "time": "09:30",
+    "bb": null,
+    "stress_avg": 22,
+    "stress_max": 25,
+    "hr_avg": 69
+  },
+  {
+    "date": "2026-06-10",
+    "time": "10:00",
+    "bb": null,
+    "stress_avg": 22,
+    "stress_max": 34,
+    "hr_avg": 70
+  },
+  {
+    "date": "2026-06-10",
+    "time": "10:30",
+    "bb": 60,
+    "stress_avg": 18,
+    "stress_max": 24,
+    "hr_avg": 68
+  },
+  {
+    "date": "2026-06-10",
+    "time": "11:00",
+    "bb": null,
+    "stress_avg": 19,
+    "stress_max": 23,
+    "hr_avg": 68
+  },
+  {
+    "date": "2026-06-10",
+    "time": "11:30",
+    "bb": null,
+    "stress_avg": 23,
+    "stress_max": 36,
+    "hr_avg": 72
+  },
+  {
+    "date": "2026-06-10",
+    "time": "12:00",
+    "bb": null,
+    "stress_avg": 28,
+    "stress_max": 49,
+    "hr_avg": 79
+  },
+  {
+    "date": "2026-06-10",
+    "time": "12:30",
+    "bb": null,
+    "stress_avg": 42,
+    "stress_max": 63,
+    "hr_avg": 86
+  },
+  {
+    "date": "2026-06-10",
+    "time": "13:00",
+    "bb": 55,
+    "stress_avg": 36,
+    "stress_max": 57,
+    "hr_avg": 78
+  },
+  {
+    "date": "2026-06-10",
+    "time": "13:30",
+    "bb": null,
+    "stress_avg": 25,
+    "stress_max": 36,
+    "hr_avg": 73
+  },
+  {
+    "date": "2026-06-10",
+    "time": "14:00",
+    "bb": null,
+    "stress_avg": 34,
+    "stress_max": 52,
+    "hr_avg": 78
+  },
+  {
+    "date": "2026-06-10",
+    "time": "14:30",
+    "bb": null,
+    "stress_avg": 26,
+    "stress_max": 43,
+    "hr_avg": 75
+  },
+  {
+    "date": "2026-06-10",
+    "time": "15:00",
+    "bb": null,
+    "stress_avg": 21,
+    "stress_max": 28,
+    "hr_avg": 70
+  },
+  {
+    "date": "2026-06-10",
+    "time": "15:30",
+    "bb": null,
+    "stress_avg": 30,
+    "stress_max": 61,
+    "hr_avg": 78
+  },
+  {
+    "date": "2026-06-10",
+    "time": "16:00",
+    "bb": null,
+    "stress_avg": 22,
+    "stress_max": 29,
     "hr_avg": 71
+  },
+  {
+    "date": "2026-06-10",
+    "time": "16:30",
+    "bb": null,
+    "stress_avg": 32,
+    "stress_max": 55,
+    "hr_avg": 78
+  },
+  {
+    "date": "2026-06-10",
+    "time": "17:00",
+    "bb": null,
+    "stress_avg": 52,
+    "stress_max": 72,
+    "hr_avg": 87
+  },
+  {
+    "date": "2026-06-10",
+    "time": "17:30",
+    "bb": null,
+    "stress_avg": 34,
+    "stress_max": 57,
+    "hr_avg": 77
+  },
+  {
+    "date": "2026-06-10",
+    "time": "18:00",
+    "bb": null,
+    "stress_avg": 32,
+    "stress_max": 49,
+    "hr_avg": 78
+  },
+  {
+    "date": "2026-06-10",
+    "time": "18:30",
+    "bb": null,
+    "stress_avg": 23,
+    "stress_max": 25,
+    "hr_avg": 82
+  },
+  {
+    "date": "2026-06-10",
+    "time": "19:00",
+    "bb": 42,
+    "stress_avg": 27,
+    "stress_max": 49,
+    "hr_avg": 75
+  },
+  {
+    "date": "2026-06-10",
+    "time": "19:30",
+    "bb": null,
+    "stress_avg": 22,
+    "stress_max": 37,
+    "hr_avg": 71
+  },
+  {
+    "date": "2026-06-10",
+    "time": "20:00",
+    "bb": null,
+    "stress_avg": 20,
+    "stress_max": 24,
+    "hr_avg": 70
+  },
+  {
+    "date": "2026-06-10",
+    "time": "20:30",
+    "bb": null,
+    "stress_avg": 28,
+    "stress_max": 70,
+    "hr_avg": 73
   }
 ]
