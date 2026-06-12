@@ -1470,5 +1470,325 @@
     "stress_avg": 36,
     "stress_max": 46,
     "hr_avg": 75
+  },
+  {
+    "date": "2026-06-12",
+    "time": "00:00",
+    "bb": null,
+    "stress_avg": 21,
+    "stress_max": 22,
+    "hr_avg": 62
+  },
+  {
+    "date": "2026-06-12",
+    "time": "00:30",
+    "bb": null,
+    "stress_avg": 19,
+    "stress_max": 22,
+    "hr_avg": 61
+  },
+  {
+    "date": "2026-06-12",
+    "time": "01:00",
+    "bb": null,
+    "stress_avg": 19,
+    "stress_max": 28,
+    "hr_avg": 61
+  },
+  {
+    "date": "2026-06-12",
+    "time": "01:30",
+    "bb": null,
+    "stress_avg": 16,
+    "stress_max": 20,
+    "hr_avg": 59
+  },
+  {
+    "date": "2026-06-12",
+    "time": "02:00",
+    "bb": null,
+    "stress_avg": 17,
+    "stress_max": 25,
+    "hr_avg": 62
+  },
+  {
+    "date": "2026-06-12",
+    "time": "02:30",
+    "bb": null,
+    "stress_avg": 15,
+    "stress_max": 19,
+    "hr_avg": 62
+  },
+  {
+    "date": "2026-06-12",
+    "time": "03:00",
+    "bb": null,
+    "stress_avg": 19,
+    "stress_max": 25,
+    "hr_avg": 63
+  },
+  {
+    "date": "2026-06-12",
+    "time": "03:30",
+    "bb": null,
+    "stress_avg": 18,
+    "stress_max": 20,
+    "hr_avg": 60
+  },
+  {
+    "date": "2026-06-12",
+    "time": "04:00",
+    "bb": null,
+    "stress_avg": 18,
+    "stress_max": 22,
+    "hr_avg": 60
+  },
+  {
+    "date": "2026-06-12",
+    "time": "04:30",
+    "bb": null,
+    "stress_avg": 18,
+    "stress_max": 21,
+    "hr_avg": 60
+  },
+  {
+    "date": "2026-06-12",
+    "time": "05:00",
+    "bb": 68,
+    "stress_avg": 20,
+    "stress_max": 23,
+    "hr_avg": 61
+  },
+  {
+    "date": "2026-06-12",
+    "time": "05:30",
+    "bb": null,
+    "stress_avg": 16,
+    "stress_max": 19,
+    "hr_avg": 58
+  },
+  {
+    "date": "2026-06-12",
+    "time": "06:00",
+    "bb": null,
+    "stress_avg": 19,
+    "stress_max": 22,
+    "hr_avg": 60
+  },
+  {
+    "date": "2026-06-12",
+    "time": "06:30",
+    "bb": null,
+    "stress_avg": 20,
+    "stress_max": 22,
+    "hr_avg": 62
+  },
+  {
+    "date": "2026-06-12",
+    "time": "07:00",
+    "bb": 78,
+    "stress_avg": 20,
+    "stress_max": 24,
+    "hr_avg": 62
+  },
+  {
+    "date": "2026-06-12",
+    "time": "07:30",
+    "bb": null,
+    "stress_avg": 23,
+    "stress_max": 25,
+    "hr_avg": 64
+  },
+  {
+    "date": "2026-06-12",
+    "time": "08:00",
+    "bb": null,
+    "stress_avg": 22,
+    "stress_max": 24,
+    "hr_avg": 63
+  },
+  {
+    "date": "2026-06-12",
+    "time": "08:30",
+    "bb": null,
+    "stress_avg": 31,
+    "stress_max": 58,
+    "hr_avg": 72
+  },
+  {
+    "date": "2026-06-12",
+    "time": "09:00",
+    "bb": null,
+    "stress_avg": 22,
+    "stress_max": 26,
+    "hr_avg": 68
+  },
+  {
+    "date": "2026-06-12",
+    "time": "09:30",
+    "bb": null,
+    "stress_avg": 19,
+    "stress_max": 22,
+    "hr_avg": 70
+  },
+  {
+    "date": "2026-06-12",
+    "time": "10:00",
+    "bb": null,
+    "stress_avg": 26,
+    "stress_max": 51,
+    "hr_avg": 70
+  },
+  {
+    "date": "2026-06-12",
+    "time": "10:30",
+    "bb": null,
+    "stress_avg": 42,
+    "stress_max": 63,
+    "hr_avg": 81
+  },
+  {
+    "date": "2026-06-12",
+    "time": "11:00",
+    "bb": null,
+    "stress_avg": 58,
+    "stress_max": 65,
+    "hr_avg": 86
+  },
+  {
+    "date": "2026-06-12",
+    "time": "11:30",
+    "bb": null,
+    "stress_avg": 88,
+    "stress_max": 95,
+    "hr_avg": 106
+  },
+  {
+    "date": "2026-06-12",
+    "time": "12:00",
+    "bb": null,
+    "stress_avg": 88,
+    "stress_max": 91,
+    "hr_avg": 103
+  },
+  {
+    "date": "2026-06-12",
+    "time": "12:30",
+    "bb": 58,
+    "stress_avg": 83,
+    "stress_max": 99,
+    "hr_avg": 104
+  },
+  {
+    "date": "2026-06-12",
+    "time": "13:00",
+    "bb": null,
+    "stress_avg": 50,
+    "stress_max": 61,
+    "hr_avg": 83
+  },
+  {
+    "date": "2026-06-12",
+    "time": "13:30",
+    "bb": null,
+    "stress_avg": 43,
+    "stress_max": 85,
+    "hr_avg": 94
+  },
+  {
+    "date": "2026-06-12",
+    "time": "14:00",
+    "bb": null,
+    "stress_avg": 33,
+    "stress_max": 43,
+    "hr_avg": 77
+  },
+  {
+    "date": "2026-06-12",
+    "time": "14:30",
+    "bb": null,
+    "stress_avg": 27,
+    "stress_max": 34,
+    "hr_avg": 75
+  },
+  {
+    "date": "2026-06-12",
+    "time": "15:00",
+    "bb": null,
+    "stress_avg": 25,
+    "stress_max": 35,
+    "hr_avg": 72
+  },
+  {
+    "date": "2026-06-12",
+    "time": "15:30",
+    "bb": null,
+    "stress_avg": 43,
+    "stress_max": 61,
+    "hr_avg": 83
+  },
+  {
+    "date": "2026-06-12",
+    "time": "16:00",
+    "bb": null,
+    "stress_avg": 25,
+    "stress_max": 27,
+    "hr_avg": 75
+  },
+  {
+    "date": "2026-06-12",
+    "time": "16:30",
+    "bb": null,
+    "stress_avg": 45,
+    "stress_max": 56,
+    "hr_avg": 81
+  },
+  {
+    "date": "2026-06-12",
+    "time": "17:00",
+    "bb": null,
+    "stress_avg": 85,
+    "stress_max": 88,
+    "hr_avg": 99
+  },
+  {
+    "date": "2026-06-12",
+    "time": "17:30",
+    "bb": null,
+    "stress_avg": 82,
+    "stress_max": 92,
+    "hr_avg": 98
+  },
+  {
+    "date": "2026-06-12",
+    "time": "18:00",
+    "bb": null,
+    "stress_avg": 76,
+    "stress_max": 85,
+    "hr_avg": 101
+  },
+  {
+    "date": "2026-06-12",
+    "time": "18:30",
+    "bb": null,
+    "stress_avg": 70,
+    "stress_max": 72,
+    "hr_avg": 120
+  },
+  {
+    "date": "2026-06-12",
+    "time": "19:00",
+    "bb": null,
+    "stress_avg": null,
+    "stress_max": null,
+    "hr_avg": 129
+  },
+  {
+    "date": "2026-06-12",
+    "time": "19:30",
+    "bb": 26,
+    "stress_avg": null,
+    "stress_max": null,
+    "hr_avg": 96
   }
 ]
