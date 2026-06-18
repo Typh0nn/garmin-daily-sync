@@ -151,20 +151,25 @@ def fetch_heart_rate(api: Garmin, date_str: str) -> list[dict]:
 
 def morning_bb(bb_today: list[dict], sleep_end_raw) -> int | None:
     """
-    BB po przebudzeniu = pierwszy pomiar BB o/po sleepEndTimestampGMT.
-    Fallback: max z okna 5:00–11:00 (gdyby brakowało czasu końca snu).
+    BB poranne = NAJWYŻSZA wartość w oknie porannym (po przebudzeniu).
+    Body Battery rośnie po wybudzeniu i osiąga szczyt zanim dzień je zużyje —
+    max z okna oddaje wartość, którą użytkownik widzi w Garminie po wstaniu.
+
+    Okno startuje od sleepEndTimestampGMT (faktyczne wybudzenie, obsługuje
+    też późne pobudki), z granicą do 13:00. Fallback: max z 6:00–13:00.
     """
     if not bb_today:
         return None
     sleep_end = _parse_gmt(sleep_end_raw)
     if sleep_end:
-        after = [r for r in bb_today if r["time"] >= sleep_end]
-        if after:
-            return after[0]["bb"]
-    window = [r for r in bb_today if 5 <= r["time"].hour < 11]
+        window = [r for r in bb_today
+                  if r["time"] >= sleep_end and r["time"].hour < 13]
+        if window:
+            return max(r["bb"] for r in window)
+    window = [r for r in bb_today if 6 <= r["time"].hour < 13]
     if window:
         return max(r["bb"] for r in window)
-    return bb_today[0]["bb"]
+    return max(r["bb"] for r in bb_today)
 
 def fetch_activities(api: Garmin, date_str: str) -> list[dict]:
     """Aktywności z danego dnia: typ, czas, czas trwania, kalorie, tętno."""
