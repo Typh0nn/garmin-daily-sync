@@ -289,8 +289,8 @@
   },
   {
     "date": "2026-06-24",
-    "bb_evening": 83,
-    "stress_avg_day": 16,
-    "stress_max_day": 23
+    "bb_evening": 20,
+    "stress_avg_day": 40,
+    "stress_max_day": 97
   }
 ]
