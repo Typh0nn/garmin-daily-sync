@@ -330,7 +330,7 @@
     "hrv_weekly_avg": null,
     "rhr": null,
     "spo2_avg": 98,
-    "bb_morning": null,
+    "bb_morning": 86,
     "bb_evening": null,
     "stress_avg_day": null,
     "stress_max_day": null
