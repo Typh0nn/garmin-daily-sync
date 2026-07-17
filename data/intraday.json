@@ -1,237 +1,5 @@
 [
   {
-    "date": "2026-07-09",
-    "time": "00:00",
-    "bb": null,
-    "stress_avg": 15,
-    "stress_max": 20,
-    "hr_avg": 56
-  },
-  {
-    "date": "2026-07-09",
-    "time": "00:30",
-    "bb": null,
-    "stress_avg": 18,
-    "stress_max": 22,
-    "hr_avg": 56
-  },
-  {
-    "date": "2026-07-09",
-    "time": "01:00",
-    "bb": null,
-    "stress_avg": 10,
-    "stress_max": 17,
-    "hr_avg": 56
-  },
-  {
-    "date": "2026-07-09",
-    "time": "01:30",
-    "bb": null,
-    "stress_avg": 13,
-    "stress_max": 15,
-    "hr_avg": 54
-  },
-  {
-    "date": "2026-07-09",
-    "time": "02:00",
-    "bb": null,
-    "stress_avg": 15,
-    "stress_max": 17,
-    "hr_avg": 53
-  },
-  {
-    "date": "2026-07-09",
-    "time": "02:30",
-    "bb": null,
-    "stress_avg": 15,
-    "stress_max": 18,
-    "hr_avg": 54
-  },
-  {
-    "date": "2026-07-09",
-    "time": "03:00",
-    "bb": 80,
-    "stress_avg": 13,
-    "stress_max": 18,
-    "hr_avg": 56
-  },
-  {
-    "date": "2026-07-09",
-    "time": "03:30",
-    "bb": null,
-    "stress_avg": 8,
-    "stress_max": 12,
-    "hr_avg": 56
-  },
-  {
-    "date": "2026-07-09",
-    "time": "04:00",
-    "bb": null,
-    "stress_avg": 13,
-    "stress_max": 17,
-    "hr_avg": 57
-  },
-  {
-    "date": "2026-07-09",
-    "time": "04:30",
-    "bb": null,
-    "stress_avg": 11,
-    "stress_max": 15,
-    "hr_avg": 56
-  },
-  {
-    "date": "2026-07-09",
-    "time": "05:00",
-    "bb": null,
-    "stress_avg": 7,
-    "stress_max": 11,
-    "hr_avg": 57
-  },
-  {
-    "date": "2026-07-09",
-    "time": "05:30",
-    "bb": null,
-    "stress_avg": 10,
-    "stress_max": 15,
-    "hr_avg": 55
-  },
-  {
-    "date": "2026-07-09",
-    "time": "06:00",
-    "bb": 100,
-    "stress_avg": 31,
-    "stress_max": 69,
-    "hr_avg": 75
-  },
-  {
-    "date": "2026-07-09",
-    "time": "06:30",
-    "bb": null,
-    "stress_avg": 37,
-    "stress_max": 45,
-    "hr_avg": 75
-  },
-  {
-    "date": "2026-07-09",
-    "time": "07:00",
-    "bb": null,
-    "stress_avg": 32,
-    "stress_max": 46,
-    "hr_avg": 75
-  },
-  {
-    "date": "2026-07-09",
-    "time": "07:30",
-    "bb": null,
-    "stress_avg": 25,
-    "stress_max": 40,
-    "hr_avg": 73
-  },
-  {
-    "date": "2026-07-09",
-    "time": "08:00",
-    "bb": null,
-    "stress_avg": 35,
-    "stress_max": 50,
-    "hr_avg": 80
-  },
-  {
-    "date": "2026-07-09",
-    "time": "08:30",
-    "bb": 81,
-    "stress_avg": 41,
-    "stress_max": 55,
-    "hr_avg": 86
-  },
-  {
-    "date": "2026-07-09",
-    "time": "09:00",
-    "bb": null,
-    "stress_avg": 48,
-    "stress_max": 73,
-    "hr_avg": 79
-  },
-  {
-    "date": "2026-07-09",
-    "time": "09:30",
-    "bb": null,
-    "stress_avg": 46,
-    "stress_max": 58,
-    "hr_avg": 90
-  },
-  {
-    "date": "2026-07-09",
-    "time": "10:00",
-    "bb": null,
-    "stress_avg": 34,
-    "stress_max": 46,
-    "hr_avg": 75
-  },
-  {
-    "date": "2026-07-09",
-    "time": "10:30",
-    "bb": null,
-    "stress_avg": 37,
-    "stress_max": 70,
-    "hr_avg": 76
-  },
-  {
-    "date": "2026-07-09",
-    "time": "11:00",
-    "bb": null,
-    "stress_avg": 70,
-    "stress_max": 70,
-    "hr_avg": 99
-  },
-  {
-    "date": "2026-07-09",
-    "time": "11:30",
-    "bb": null,
-    "stress_avg": 48,
-    "stress_max": 81,
-    "hr_avg": 85
-  },
-  {
-    "date": "2026-07-09",
-    "time": "12:00",
-    "bb": null,
-    "stress_avg": 36,
-    "stress_max": 80,
-    "hr_avg": 77
-  },
-  {
-    "date": "2026-07-09",
-    "time": "12:30",
-    "bb": null,
-    "stress_avg": 41,
-    "stress_max": 58,
-    "hr_avg": 80
-  },
-  {
-    "date": "2026-07-09",
-    "time": "13:00",
-    "bb": null,
-    "stress_avg": 34,
-    "stress_max": 51,
-    "hr_avg": 73
-  },
-  {
-    "date": "2026-07-09",
-    "time": "13:30",
-    "bb": 52,
-    "stress_avg": 24,
-    "stress_max": 27,
-    "hr_avg": 75
-  },
-  {
-    "date": "2026-07-09",
-    "time": "14:00",
-    "bb": null,
-    "stress_avg": 30,
-    "stress_max": 35,
-    "hr_avg": 70
-  },
-  {
     "date": "2026-07-10",
     "time": "00:00",
     "bb": null,
@@ -1998,5 +1766,253 @@
     "stress_avg": 50,
     "stress_max": 55,
     "hr_avg": 84
+  },
+  {
+    "date": "2026-07-17",
+    "time": "00:00",
+    "bb": null,
+    "stress_avg": 15,
+    "stress_max": 19,
+    "hr_avg": 55
+  },
+  {
+    "date": "2026-07-17",
+    "time": "00:30",
+    "bb": null,
+    "stress_avg": 16,
+    "stress_max": 19,
+    "hr_avg": 56
+  },
+  {
+    "date": "2026-07-17",
+    "time": "01:00",
+    "bb": null,
+    "stress_avg": 14,
+    "stress_max": 17,
+    "hr_avg": 57
+  },
+  {
+    "date": "2026-07-17",
+    "time": "01:30",
+    "bb": null,
+    "stress_avg": 11,
+    "stress_max": 14,
+    "hr_avg": 55
+  },
+  {
+    "date": "2026-07-17",
+    "time": "02:00",
+    "bb": null,
+    "stress_avg": 14,
+    "stress_max": 23,
+    "hr_avg": 57
+  },
+  {
+    "date": "2026-07-17",
+    "time": "02:30",
+    "bb": null,
+    "stress_avg": 14,
+    "stress_max": 17,
+    "hr_avg": 56
+  },
+  {
+    "date": "2026-07-17",
+    "time": "03:00",
+    "bb": null,
+    "stress_avg": 13,
+    "stress_max": 18,
+    "hr_avg": 56
+  },
+  {
+    "date": "2026-07-17",
+    "time": "03:30",
+    "bb": 79,
+    "stress_avg": 13,
+    "stress_max": 20,
+    "hr_avg": 55
+  },
+  {
+    "date": "2026-07-17",
+    "time": "04:00",
+    "bb": null,
+    "stress_avg": 16,
+    "stress_max": 23,
+    "hr_avg": 57
+  },
+  {
+    "date": "2026-07-17",
+    "time": "04:30",
+    "bb": null,
+    "stress_avg": 16,
+    "stress_max": 20,
+    "hr_avg": 53
+  },
+  {
+    "date": "2026-07-17",
+    "time": "05:00",
+    "bb": null,
+    "stress_avg": 14,
+    "stress_max": 18,
+    "hr_avg": 55
+  },
+  {
+    "date": "2026-07-17",
+    "time": "05:30",
+    "bb": null,
+    "stress_avg": 16,
+    "stress_max": 20,
+    "hr_avg": 56
+  },
+  {
+    "date": "2026-07-17",
+    "time": "06:00",
+    "bb": null,
+    "stress_avg": 17,
+    "stress_max": 20,
+    "hr_avg": 58
+  },
+  {
+    "date": "2026-07-17",
+    "time": "06:30",
+    "bb": null,
+    "stress_avg": 19,
+    "stress_max": 22,
+    "hr_avg": 57
+  },
+  {
+    "date": "2026-07-17",
+    "time": "07:00",
+    "bb": null,
+    "stress_avg": 20,
+    "stress_max": 23,
+    "hr_avg": 58
+  },
+  {
+    "date": "2026-07-17",
+    "time": "07:30",
+    "bb": null,
+    "stress_avg": 13,
+    "stress_max": 19,
+    "hr_avg": 56
+  },
+  {
+    "date": "2026-07-17",
+    "time": "08:00",
+    "bb": 100,
+    "stress_avg": 14,
+    "stress_max": 20,
+    "hr_avg": 56
+  },
+  {
+    "date": "2026-07-17",
+    "time": "08:30",
+    "bb": null,
+    "stress_avg": 14,
+    "stress_max": 18,
+    "hr_avg": 55
+  },
+  {
+    "date": "2026-07-17",
+    "time": "09:00",
+    "bb": 100,
+    "stress_avg": 21,
+    "stress_max": 23,
+    "hr_avg": 61
+  },
+  {
+    "date": "2026-07-17",
+    "time": "09:30",
+    "bb": null,
+    "stress_avg": 20,
+    "stress_max": 25,
+    "hr_avg": 65
+  },
+  {
+    "date": "2026-07-17",
+    "time": "10:00",
+    "bb": null,
+    "stress_avg": 23,
+    "stress_max": 37,
+    "hr_avg": 69
+  },
+  {
+    "date": "2026-07-17",
+    "time": "10:30",
+    "bb": null,
+    "stress_avg": 26,
+    "stress_max": 49,
+    "hr_avg": 71
+  },
+  {
+    "date": "2026-07-17",
+    "time": "11:00",
+    "bb": null,
+    "stress_avg": 26,
+    "stress_max": 31,
+    "hr_avg": 69
+  },
+  {
+    "date": "2026-07-17",
+    "time": "11:30",
+    "bb": null,
+    "stress_avg": 37,
+    "stress_max": 63,
+    "hr_avg": 74
+  },
+  {
+    "date": "2026-07-17",
+    "time": "12:00",
+    "bb": null,
+    "stress_avg": 32,
+    "stress_max": 47,
+    "hr_avg": 73
+  },
+  {
+    "date": "2026-07-17",
+    "time": "12:30",
+    "bb": null,
+    "stress_avg": 35,
+    "stress_max": 52,
+    "hr_avg": 76
+  },
+  {
+    "date": "2026-07-17",
+    "time": "13:00",
+    "bb": null,
+    "stress_avg": 38,
+    "stress_max": 50,
+    "hr_avg": 74
+  },
+  {
+    "date": "2026-07-17",
+    "time": "13:30",
+    "bb": null,
+    "stress_avg": 64,
+    "stress_max": 64,
+    "hr_avg": 100
+  },
+  {
+    "date": "2026-07-17",
+    "time": "14:00",
+    "bb": null,
+    "stress_avg": null,
+    "stress_max": null,
+    "hr_avg": 132
+  },
+  {
+    "date": "2026-07-17",
+    "time": "14:30",
+    "bb": 65,
+    "stress_avg": null,
+    "stress_max": null,
+    "hr_avg": 115
+  },
+  {
+    "date": "2026-07-17",
+    "time": "15:00",
+    "bb": null,
+    "stress_avg": null,
+    "stress_max": null,
+    "hr_avg": 110
   }
 ]
