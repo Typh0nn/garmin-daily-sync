@@ -1,16 +1,22 @@
 #!/usr/bin/env python3
 """
-garmin_sync.py v4 — garminconnect → GitHub JSON
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+garmin_sync.py v5 — garminconnect → GitHub JSON
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Tryby:
-  --mode morning   wczorajszy sen + dzisiejsze BB rano
-  --mode evening   dzisiejszy intraday 30-min
+  --mode morning      wczorajszy sen + dzisiejsze BB po przebudzeniu
+  --mode evening      dzisiejszy intraday 30-min
+  --mode activities   dzisiejsze aktywności (basen, trening: czas, kalorie, tętno)
 
 Env vars (automatyczne w Actions):
   GITHUB_TOKEN, GITHUB_REPOSITORY
 
 Env vars (sekrety ręczne):
   GARMIN_EMAIL, GARMIN_PASSWORD
+
+ZMIANY v4 → v5:
+  • BB poranne: pierwszy pomiar PO przebudzeniu (sleepEndTimestampGMT),
+    zamiast pierwszego pomiaru doby (który łapał środek nocy = zaniżone).
+  • Nowy tryb activities + plik data/activities.json.
 """
 
 import argparse
@@ -25,12 +31,14 @@ from github import Auth, Github, GithubException
 
 # ─── CONFIG ────────────────────────────────────────────────────────────────────
 
-REPO_NAME     = os.environ["GITHUB_REPOSITORY"]
-GH_TOKEN      = os.environ["GITHUB_TOKEN"]
-DAILY_FILE    = "data/daily.json"
-INTRADAY_FILE = "data/intraday.json"
-MAX_DAILY     = 30
-MAX_INTRADAY  = 7
+REPO_NAME      = os.environ["GITHUB_REPOSITORY"]
+GH_TOKEN       = os.environ["GITHUB_TOKEN"]
+DAILY_FILE     = "data/daily.json"
+INTRADAY_FILE  = "data/intraday.json"
+ACTIVITIES_FILE = "data/activities.json"
+MAX_DAILY      = 30
+MAX_INTRADAY   = 7
+MAX_ACTIVITIES = 30
 
 # ─── AUTH ──────────────────────────────────────────────────────────────────────
 
@@ -49,20 +57,20 @@ def garmin_auth() -> Garmin:
 
 # ─── GITHUB HELPERS ────────────────────────────────────────────────────────────
 
-def gh_read(repo, path: str) -> tuple[list, str | None]:
+def gh_read(repo, path: str):
     f = None
     try:
         f = repo.get_contents(path)
-        content = f.decoded_content.decode("utf-8-sig").strip()  # utf-8-sig usuwa BOM
+        content = f.decoded_content.decode("utf-8-sig").strip()
         if not content:
-            return [], f.sha          # plik istnieje ale pusty
+            return [], f.sha
         return json.loads(content), f.sha
     except json.JSONDecodeError:
-        return [], f.sha if f else None   # plik istnieje (zły JSON) → zachowaj sha do update
+        return [], f.sha if f else None
     except GithubException:
-        return [], None                   # plik nie istnieje
+        return [], None
 
-def gh_write(repo, path: str, data: list, sha: str | None, message: str):
+def gh_write(repo, path: str, data: list, sha, message: str):
     content = json.dumps(data, ensure_ascii=False, indent=2)
     if sha:
         repo.update_file(path, message, content, sha)
@@ -71,6 +79,17 @@ def gh_write(repo, path: str, data: list, sha: str | None, message: str):
     print(f"GitHub: '{path}' zapisany ({len(data)} rekordów)")
 
 # ─── GARMIN FETCHERS ───────────────────────────────────────────────────────────
+
+def _parse_gmt(ts) -> datetime | None:
+    """sleepEndTimestampGMT bywa epoch-ms (int) albo ISO string."""
+    if ts is None:
+        return None
+    if isinstance(ts, (int, float)):
+        return datetime.fromtimestamp(ts / 1000)
+    try:
+        return datetime.fromisoformat(str(ts).replace("Z", "").split(".")[0])
+    except ValueError:
+        return None
 
 def fetch_sleep(api: Garmin, date_str: str) -> dict:
     try:
@@ -87,6 +106,7 @@ def fetch_sleep(api: Garmin, date_str: str) -> dict:
             "hrv_weekly_avg": dto.get("hrvWeeklyAverage"),
             "rhr":            dto.get("restingHeartRate"),
             "spo2_avg":       round(dto.get("averageSpO2Value") or 0) or None,
+            "_sleep_end":     dto.get("sleepEndTimestampGMT"),  # do BB po przebudzeniu
         }
     except Exception as e:
         print(f"[BŁĄD] sleep ({date_str}): {e}")
@@ -129,6 +149,51 @@ def fetch_heart_rate(api: Garmin, date_str: str) -> list[dict]:
         print(f"[BŁĄD] heart rate ({date_str}): {e}")
         return []
 
+def morning_bb(bb_today: list[dict], sleep_end_raw) -> int | None:
+    """
+    BB poranne = NAJWYŻSZA wartość w oknie porannym (po przebudzeniu).
+    Body Battery rośnie po wybudzeniu i osiąga szczyt zanim dzień je zużyje —
+    max z okna oddaje wartość, którą użytkownik widzi w Garminie po wstaniu.
+
+    Okno startuje od sleepEndTimestampGMT (faktyczne wybudzenie, obsługuje
+    też późne pobudki), z granicą do 13:00. Fallback: max z 6:00–13:00.
+    """
+    if not bb_today:
+        return None
+    sleep_end = _parse_gmt(sleep_end_raw)
+    if sleep_end:
+        window = [r for r in bb_today
+                  if r["time"] >= sleep_end and r["time"].hour < 13]
+        if window:
+            return max(r["bb"] for r in window)
+    window = [r for r in bb_today if 6 <= r["time"].hour < 13]
+    if window:
+        return max(r["bb"] for r in window)
+    return max(r["bb"] for r in bb_today)
+
+def fetch_activities(api: Garmin, date_str: str) -> list[dict]:
+    """Aktywności z danego dnia: typ, czas, czas trwania, kalorie, tętno."""
+    try:
+        acts = api.get_activities_by_date(date_str, date_str)
+        out = []
+        for a in acts:
+            start = a.get("startTimeLocal", "")
+            time_str = start.split(" ")[1][:5] if " " in start else "?"
+            out.append({
+                "date":         date_str,
+                "time":         time_str,
+                "type":         (a.get("activityType") or {}).get("typeKey", "?"),
+                "name":         a.get("activityName", ""),
+                "duration_min": round((a.get("duration") or 0) / 60, 1),
+                "calories":     round(a.get("calories") or 0) or None,
+                "hr_avg":       round(a.get("averageHR")) if a.get("averageHR") else None,
+                "hr_max":       round(a.get("maxHR")) if a.get("maxHR") else None,
+            })
+        return out
+    except Exception as e:
+        print(f"[BŁĄD] activities ({date_str}): {e}")
+        return []
+
 def aggregate_30min(bb_data, stress_data, hr_data, date_str: str) -> list[dict]:
     target = datetime.strptime(date_str, "%Y-%m-%d").date()
     blocks: dict = defaultdict(lambda: {"bb": [], "stress": [], "hr": []})
@@ -168,7 +233,7 @@ def run_morning(api: Garmin, repo):
 
     sleep      = fetch_sleep(api, yesterday)
     bb_today   = fetch_body_battery(api, today)
-    bb_morning = bb_today[0]["bb"] if bb_today else None
+    bb_morning = morning_bb(bb_today, sleep.pop("_sleep_end", None))
 
     daily, sha = gh_read(repo, DAILY_FILE)
     daily      = [d for d in daily if d.get("date") != yesterday]
@@ -180,7 +245,7 @@ def run_morning(api: Garmin, repo):
     daily = sorted(daily, key=lambda x: x["date"])[-MAX_DAILY:]
     gh_write(repo, DAILY_FILE, daily, sha,
              f"morning: sen {yesterday}, BB_rano={bb_morning}")
-    print(f"sleep={sleep.get('sleep_score')}, HRV={sleep.get('hrv_last_night')}, BB_rano={bb_morning}")
+    print(f"sleep={sleep.get('sleep_score')}, BB_rano={bb_morning}")
 
 # ─── TRYB: EVENING ─────────────────────────────────────────────────────────────
 
@@ -222,11 +287,29 @@ def run_evening(api: Garmin, repo):
              f"evening: BB_wie={bb_eve}, stress_avg={s_avg}")
     print(f"BB {bb_vals[0] if bb_vals else '?'}→{bb_eve}, stress avg={s_avg}, max={s_max}")
 
+# ─── TRYB: ACTIVITIES ──────────────────────────────────────────────────────────
+
+def run_activities(api: Garmin, repo):
+    today  = date.today().strftime("%Y-%m-%d")
+    cutoff = (date.today() - timedelta(days=MAX_ACTIVITIES)).strftime("%Y-%m-%d")
+    print(f"[ACTIVITIES] {today}")
+
+    todays = fetch_activities(api, today)
+
+    activities, sha = gh_read(repo, ACTIVITIES_FILE)
+    activities = [a for a in activities if a.get("date") != today and a.get("date","") >= cutoff]
+    activities = sorted(activities + todays, key=lambda x: (x["date"], x.get("time","")))
+    gh_write(repo, ACTIVITIES_FILE, activities, sha,
+             f"activities: {today} ({len(todays)} aktywności)")
+    for a in todays:
+        print(f"  {a['time']} {a['type']}: {a['duration_min']}min, "
+              f"{a['calories']}kcal, HR avg={a['hr_avg']}/max={a['hr_max']}")
+
 # ─── ENTRY POINT ───────────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--mode", choices=["morning", "evening"], required=True)
+    parser.add_argument("--mode", choices=["morning", "evening", "activities"], required=True)
     args = parser.parse_args()
 
     api  = garmin_auth()
@@ -234,5 +317,7 @@ if __name__ == "__main__":
 
     if args.mode == "morning":
         run_morning(api, repo)
-    else:
+    elif args.mode == "evening":
         run_evening(api, repo)
+    else:
+        run_activities(api, repo)
