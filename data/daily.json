@@ -465,8 +465,18 @@
   },
   {
     "date": "2026-07-24",
-    "bb_evening": 28,
-    "stress_avg_day": 32,
-    "stress_max_day": 91
+    "sleep_score": 80,
+    "deep_min": 124,
+    "light_min": 212,
+    "rem_min": 55,
+    "awake_min": 5,
+    "hrv_last_night": null,
+    "hrv_weekly_avg": null,
+    "rhr": null,
+    "spo2_avg": 98,
+    "bb_morning": 18,
+    "bb_evening": null,
+    "stress_avg_day": null,
+    "stress_max_day": null
   }
 ]
