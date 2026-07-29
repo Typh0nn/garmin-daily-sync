@@ -28,5 +28,15 @@
     "calories": 266,
     "hr_avg": 130,
     "hr_max": 168
+  },
+  {
+    "date": "2026-07-29",
+    "time": "17:29",
+    "type": "road_biking",
+    "name": "Warszawa Kolarstwo szosowe",
+    "duration_min": 55.8,
+    "calories": 478,
+    "hr_avg": 133,
+    "hr_max": 156
   }
 ]
