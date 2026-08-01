@@ -1,21 +1,5 @@
 [
   {
-    "date": "2026-07-02",
-    "sleep_score": 79,
-    "deep_min": 113,
-    "light_min": 257,
-    "rem_min": 74,
-    "awake_min": 13,
-    "hrv_last_night": null,
-    "hrv_weekly_avg": null,
-    "rhr": null,
-    "spo2_avg": 97,
-    "bb_morning": 100,
-    "bb_evening": null,
-    "stress_avg_day": null,
-    "stress_max_day": null
-  },
-  {
     "date": "2026-07-03",
     "sleep_score": 92,
     "deep_min": 115,
@@ -478,5 +462,11 @@
     "bb_evening": null,
     "stress_avg_day": null,
     "stress_max_day": null
+  },
+  {
+    "date": "2026-08-01",
+    "bb_evening": 72,
+    "stress_avg_day": 17,
+    "stress_max_day": 55
   }
 ]
