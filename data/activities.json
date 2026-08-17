@@ -1,15 +1,5 @@
 [
   {
-    "date": "2026-07-17",
-    "time": "15:49",
-    "type": "lap_swimming",
-    "name": "Pływanie na basenie",
-    "duration_min": 33.1,
-    "calories": 266,
-    "hr_avg": 130,
-    "hr_max": 168
-  },
-  {
     "date": "2026-07-29",
     "time": "17:29",
     "type": "road_biking",
