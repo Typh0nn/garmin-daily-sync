@@ -8,5 +8,15 @@
     "calories": 478,
     "hr_avg": 133,
     "hr_max": 156
+  },
+  {
+    "date": "2026-08-19",
+    "time": "11:31",
+    "type": "breathwork",
+    "name": "Relaks i skupienie (krótkie)",
+    "duration_min": 5.6,
+    "calories": null,
+    "hr_avg": 80,
+    "hr_max": 87
   }
 ]
