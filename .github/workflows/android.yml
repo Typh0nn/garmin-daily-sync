@@ -1,0 +1,52 @@
+name: Android agent build
+
+on:
+  push:
+    paths:
+      - 'android/**'
+      - '.github/workflows/android.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: android
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # Stały klucz podpisu: aktualizacja APK instaluje się na poprzedniej wersji bez utraty danych.
+      # Docelowo sekret AGENT_DEBUG_KEYSTORE_B64; do tego czasu klucz trzymany w cache Actions.
+      - name: Restore signing key (cache)
+        uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: agent-debug-keystore-v1
+
+      - name: Signing key from secret (if set)
+        env:
+          KS: ${{ secrets.AGENT_DEBUG_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS" ]; then
+            mkdir -p ~/.android
+            echo "$KS" | base64 -d > ~/.android/debug.keystore
+          fi
+
+      - name: Build debug APK
+        run: ./gradlew --no-daemon assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: agent-debug-apk
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 14
