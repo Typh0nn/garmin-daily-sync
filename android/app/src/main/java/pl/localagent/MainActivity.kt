@@ -91,6 +91,8 @@ class MainActivity : Activity() {
             )
         }
 
+        watchSection()
+
         header("Test")
         button("Wyślij testowy popup") {
             Notifier.nudge(this, "Test: tak będą wyglądać podpowiedzi agenta. Odpowiedz, żeby sprawdzić czat.")
@@ -112,6 +114,66 @@ class MainActivity : Activity() {
         val chat = AgentDb.get(this).latest("chat", 10)
         if (chat.isEmpty()) text("—")
         chat.forEach { text("${hm.format(Date(it.ts))} ${if (it.kind == "user") "Ty" else "Agent"}: ${it.data}") }
+    }
+
+    @Deprecated("Activity API frameworku; wystarczy do jednego wyboru pliku.")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        val uri = data?.data
+        if (requestCode == PICK_GB_EXPORT && resultCode == RESULT_OK && uri != null) {
+            Gadgetbridge.setExportUri(this, uri)
+            render()
+        }
+    }
+
+    private fun watchSection() {
+        header("Zegarek (Gadgetbridge)")
+        if (!Gadgetbridge.isInstalled(this)) {
+            text("Gadgetbridge nie jest zainstalowany.")
+            return
+        }
+        if (Gadgetbridge.exportUri(this) == null) {
+            text(
+                "W Gadgetbridge: Ustawienia → Opcje programisty → Intent API (włącz synchronizację i eksport bazy), " +
+                    "oraz Zarządzanie danymi → Auto export (ustaw plik eksportu). Potem wskaż ten sam plik tutaj."
+            )
+            button("Wskaż plik eksportu Gadgetbridge") {
+                @Suppress("DEPRECATION")
+                startActivityForResult(
+                    Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"),
+                    PICK_GB_EXPORT
+                )
+            }
+            return
+        }
+        val prefs = AgentControl.prefs(this)
+        val lastImport = prefs.getLong(Gadgetbridge.KEY_LAST_IMPORT, 0)
+        text(
+            "Ostatni import: " + if (lastImport > 0) {
+                "${hm.format(Date(lastImport))} (${prefs.getInt(Gadgetbridge.KEY_LAST_COUNT, 0)} nowych próbek)"
+            } else "jeszcze nie było"
+        )
+        prefs.getString(Gadgetbridge.KEY_MISSING, "").takeUnless { it.isNullOrEmpty() }
+            ?.let { text("Nie znaleziono w eksporcie: $it") }
+        button("Synchronizuj teraz") {
+            Gadgetbridge.requestSync(this)
+            text("Wysłano. Dane pojawią się po synchronizacji i eksporcie (do kilku minut).")
+        }
+
+        val today = AgentDb.get(this).since("watch", startOfToday())
+        if (today.isEmpty()) {
+            text("Brak danych z zegarka z dzisiaj.")
+            return
+        }
+        fun last(kind: String) = today.lastOrNull { it.kind == kind }
+        last("stress")?.let { text("Stres: ${it.data} (${hm.format(Date(it.ts))})") }
+        today.filter { it.kind == "stress" }.mapNotNull { it.data.toDoubleOrNull() }
+            .takeIf { it.isNotEmpty() }?.let { text("Stres dziś średnio: ${it.average().toInt()}") }
+        last("body_battery")?.let { text("Body Battery: ${it.data} (${hm.format(Date(it.ts))})") }
+        last("hr")?.let { text("Tętno: ${it.data} (${hm.format(Date(it.ts))})") }
+        today.filter { it.kind == "steps" }.sumOf { it.data.toLongOrNull() ?: 0L }
+            .takeIf { it > 0 }?.let { text("Kroki dziś: $it") }
+        last("sleep_score")?.let { text("Wynik snu: ${it.data}") }
     }
 
     private fun granted(p: String) = checkSelfPermission(p) == PackageManager.PERMISSION_GRANTED
@@ -148,4 +210,8 @@ class MainActivity : Activity() {
     }
 
     private fun dp(v: Int) = (v * resources.displayMetrics.density).toInt()
+
+    private companion object {
+        const val PICK_GB_EXPORT = 10
+    }
 }

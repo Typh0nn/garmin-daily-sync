@@ -72,6 +72,15 @@ czatem albo rozmową głosową.
 - **Klucz podpisu APK:** przed trybem nauki potrzebny jest stały klucz. Inaczej aktualizacja wymaga reinstalacji i kasuje dane.
 - **Google Tasks:** potrzebny projekt Google Cloud z klientem OAuth (tryb testowy, jeden użytkownik).
 
+## Konfiguracja Gadgetbridge (Etap 1b)
+
+1. **Gadgetbridge → Ustawienia → Opcje programisty → Intent API:** włącz Intent API, synchronizację aktywności i eksport bazy.
+   Jeśli tak zostało oznaczone, włącz je też w ustawieniach urządzenia → Ustawienia programisty.
+2. **Gadgetbridge → Zarządzanie danymi → Auto export:** ustaw plik eksportu (np. `Download/Gadgetbridge.db`) i włącz auto export.
+3. **Agent → sekcja „Zegarek” → „Wskaż plik eksportu Gadgetbridge”:** wskaż ten sam plik.
+4. Agent co 15 min (w trybie oszczędzania co godzinę) wysyła `ACTIVITY_SYNC`, potem `TRIGGER_EXPORT`, a po `DATABASE_EXPORT_SUCCESS` importuje nowe próbki.
+   Kopia bazy jest usuwana zaraz po imporcie.
+
 ## Notatki techniczne: baza Gadgetbridge (schemat 163)
 
 Tabele greenDAO (nazwy kolumn w UPPER_SNAKE), wspólne kolumny: `TIMESTAMP`, `DEVICE_ID`, `USER_ID`.

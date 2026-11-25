@@ -46,6 +46,18 @@ class AgentService : Service() {
         }
     }
 
+    // Zdarzenia z Gadgetbridge (inna aplikacja, więc odbiornik musi być eksportowany).
+    // Najgorsze, co obca aplikacja może tu wywołać, to dodatkowy eksport/import.
+    private val watchReceiver = object : BroadcastReceiver() {
+        override fun onReceive(ctx: Context, intent: Intent) {
+            when (intent.action) {
+                Gadgetbridge.EV_SYNC_DONE -> Gadgetbridge.requestExport(ctx)
+                Gadgetbridge.EV_EXPORT_OK -> handler.post { importWatch() }
+                Gadgetbridge.EV_EXPORT_FAIL -> db.log("error", "watch_export")
+            }
+        }
+    }
+
     override fun onCreate() {
         super.onCreate()
         db = AgentDb.get(this)
@@ -73,6 +85,15 @@ class AgentService : Service() {
             },
             Context.RECEIVER_NOT_EXPORTED
         )
+        registerReceiver(
+            watchReceiver,
+            IntentFilter().apply {
+                addAction(Gadgetbridge.EV_SYNC_DONE)
+                addAction(Gadgetbridge.EV_EXPORT_OK)
+                addAction(Gadgetbridge.EV_EXPORT_FAIL)
+            },
+            Context.RECEIVER_EXPORTED
+        )
         db.log("agent", "started")
         handler.post(tick)
     }
@@ -83,6 +104,7 @@ class AgentService : Service() {
         if (::thread.isInitialized) {
             handler.removeCallbacksAndMessages(null)
             unregisterReceiver(systemReceiver)
+            unregisterReceiver(watchReceiver)
             thread.quitSafely()
             db.log("agent", "stopped")
         }
@@ -98,6 +120,20 @@ class AgentService : Service() {
             UsageCollector.collect(this, db)
         } catch (e: Exception) {
             db.log("error", "usage", e.toString())
+        }
+        // Zegarek: synchronizacja co 15 min (oszczędzanie energii: co godzinę).
+        // Gdyby Gadgetbridge nie zgłosił końca synchronizacji, eksport i tak ruszy po 3 min.
+        if (Gadgetbridge.requestSyncIfDue(this, if (powerSave()) 60 * 60_000L else 15 * 60_000L)) {
+            handler.postDelayed({ Gadgetbridge.requestExport(this) }, 3 * 60_000L)
+        }
+        importWatch()
+    }
+
+    private fun importWatch() {
+        try {
+            Gadgetbridge.importIfChanged(this, db)
+        } catch (e: Exception) {
+            db.log("error", "watch_import", e.toString())
         }
     }
 }
