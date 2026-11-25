@@ -100,6 +100,7 @@ class MainActivity : Activity() {
 
         watchSection()
         ambientSection()
+        screenSection()
 
         header("Test")
         button("Wyślij testowy popup") {
@@ -244,6 +245,41 @@ class MainActivity : Activity() {
         close(System.currentTimeMillis())
         if (totals.isEmpty()) text("Brak danych z dzisiaj.")
         totals.entries.sortedByDescending { it.value }.forEach { (label, ms) -> text("${minutes(ms)}  $label") }
+    }
+
+    private fun screenSection() {
+        header("Ekran (odczyt treści)")
+        if (!ScreenReader.isEnabled(this)) {
+            text(
+                "Wyłączony. Ustawienia → Ułatwienia dostępu → Pobrane aplikacje → „Agent: odczyt ekranu” → włącz. " +
+                    "Bank i menedżer haseł są pomijane."
+            )
+            button("Otwórz ułatwienia dostępu") { startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)) }
+        } else {
+            text("Włączony. Tekst zostaje tylko w pamięci; zapisywane jest samo przewijanie.")
+        }
+
+        // Przewijanie dziś (podstawa do wykrywania doomscrollingu).
+        val scrolls = HashMap<String, Int>()
+        AgentDb.get(this).since("screen", startOfToday()).filter { it.kind == "scroll" }.forEach {
+            val (pkg, n) = it.data.split('|').let { p -> p[0] to (p.getOrNull(1)?.toIntOrNull() ?: 0) }
+            scrolls[pkg] = (scrolls[pkg] ?: 0) + n
+        }
+        scrolls.entries.sortedByDescending { it.value }.take(5)
+            .forEach { (pkg, n) -> text("Przewinięcia: $n  ${label(pkg)}") }
+
+        // Czarna lista: dzisiejsze aplikacje z przełącznikiem „czytaj / nie czytaj”.
+        text("Czarna lista (dotknij, aby zmienić):")
+        UsageCollector.durations(AgentDb.get(this), startOfToday(), System.currentTimeMillis())
+            .map { it.first }.filter { it != packageName }.take(10).forEach { pkg ->
+                when {
+                    Blocklist.isDefaultBlocked(pkg) -> text("⛔ ${label(pkg)} (zawsze pomijana)")
+                    Blocklist.isBlocked(this, pkg) -> button("⛔ ${label(pkg)}: nie czytam") {
+                        Blocklist.toggle(this, pkg); render()
+                    }
+                    else -> button("👁 ${label(pkg)}: czytam") { Blocklist.toggle(this, pkg); render() }
+                }
+            }
     }
 
     private fun granted(p: String) = checkSelfPermission(p) == PackageManager.PERMISSION_GRANTED

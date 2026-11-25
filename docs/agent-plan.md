@@ -91,6 +91,18 @@ czatem albo rozmową głosową.
   Po restarcie wystarczy otworzyć Agenta. W trybie oszczędzania energii nasłuch jest wstrzymany.
 - **APK:** tylko arm64. Biblioteki MediaPipe są wyrównane do stron 16 KB.
 
+## Odczyt ekranu (Etap 1d)
+
+- **Usługa:** `ScreenReader` (ułatwienia dostępu). Czyta zdarzenia zmiany okna, zmiany treści i przewijania.
+- **Czarna lista:**
+  - domyślna: banki, BLIK, menedżery haseł, aplikacje uwierzytelniające;
+  - dodatkowa: wybrana przez użytkownika na ekranie Agenta.
+  Pola haseł są pomijane zawsze.
+- **Zapis:**
+  - w bazie tylko minutowe liczniki przewijania per aplikacja (`screen/scroll`);
+  - tekst ekranu (do 2000 znaków, ostatnia aplikacja) wyłącznie w pamięci (`ScreenContext`), na potrzeby Etapu 3.
+- **Ryzyko:** aplikacje bankowe mogą reagować na samo włączenie usługi ułatwień dostępu.
+
 ## Notatki techniczne: baza Gadgetbridge (schemat 163)
 
 Tabele greenDAO (nazwy kolumn w UPPER_SNAKE), wspólne kolumny: `TIMESTAMP`, `DEVICE_ID`, `USER_ID`.

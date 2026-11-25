@@ -48,8 +48,8 @@ jobs:
             echo "::warning::Brak sekretu AGENT_DEBUG_KEYSTORE_B64 — APK nie zostanie opublikowany."
           fi
 
-      - name: Build debug APK
-        run: ./gradlew --no-daemon assembleDebug -PversionCode=${{ github.run_number }}
+      - name: Test + build debug APK
+        run: ./gradlew --no-daemon testDebugUnitTest assembleDebug -PversionCode=${{ github.run_number }}
 
       - uses: actions/upload-artifact@v4
         with:
