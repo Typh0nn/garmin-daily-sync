@@ -21,6 +21,7 @@ import java.util.Locale
 class MainActivity : Activity() {
 
     private lateinit var content: LinearLayout
+    private var importResult: String? = null
     private val hm = SimpleDateFormat("HH:mm", Locale.getDefault())
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -162,6 +163,31 @@ class MainActivity : Activity() {
         button("Synchronizuj teraz") {
             Gadgetbridge.requestSync(this)
             text("Wysłano. Dane pojawią się po synchronizacji i eksporcie (do kilku minut).")
+        }
+        button("Importuj teraz (z obecnego pliku)") {
+            importResult = "Importuję…"
+            render()
+            Thread {
+                val result = try {
+                    "Zaimportowano: ${Gadgetbridge.importIfChanged(this, AgentDb.get(this), force = true)} próbek"
+                } catch (e: Exception) {
+                    "Błąd importu: $e"
+                }
+                runOnUiThread { importResult = result; render() }
+            }.start()
+        }
+        importResult?.let { text(it) }
+
+        // Diagnostyka: stan pliku eksportu i ostatnie zdarzenia synchronizacji.
+        val info = Gadgetbridge.exportUri(this)?.let { Gadgetbridge.fileInfo(this, it) }
+        text(
+            if (info == null) "Plik eksportu: brak dostępu (wskaż go ponownie)"
+            else "Plik eksportu: ${info.first?.let { "${it / 1024} KB" } ?: "?"}, zmieniony " +
+                (info.second?.let { hm.format(Date(it)) } ?: "?")
+        )
+        val db = AgentDb.get(this)
+        (db.latest("watch_sync", 6) + db.latest("error", 3)).sortedBy { it.ts }.forEach {
+            text("· ${hm.format(Date(it.ts))} ${it.source}/${it.kind} ${it.data.take(120)}")
         }
 
         val today = AgentDb.get(this).since("watch", startOfToday())

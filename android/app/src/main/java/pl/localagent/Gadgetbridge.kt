@@ -88,14 +88,16 @@ object Gadgetbridge {
 
     private fun send(ctx: Context, action: String) = ctx.sendBroadcast(Intent(action).setPackage(PKG))
 
-    /** Importuje nowe próbki, jeśli plik eksportu zmienił się od ostatniego importu. */
-    fun importIfChanged(ctx: Context, db: AgentDb): Int {
+    /** Importuje nowe próbki, jeśli plik eksportu zmienił się od ostatniego importu (albo [force]). */
+    fun importIfChanged(ctx: Context, db: AgentDb, force: Boolean = false): Int {
         val uri = exportUri(ctx) ?: return 0
         val prefs = AgentControl.prefs(ctx)
         val modified = lastModified(ctx, uri)
-        if (modified != null && modified <= prefs.getLong(KEY_IMPORTED_MOD, 0)) return 0
-        // Gdy dostawca plików nie podaje daty zmiany: importuj najwyżej co 15 min.
-        if (modified == null && System.currentTimeMillis() - prefs.getLong(KEY_LAST_IMPORT, 0) < 15 * 60_000L) return 0
+        if (!force) {
+            if (modified != null && modified <= prefs.getLong(KEY_IMPORTED_MOD, 0)) return 0
+            // Gdy dostawca plików nie podaje daty zmiany: importuj najwyżej co 15 min.
+            if (modified == null && System.currentTimeMillis() - prefs.getLong(KEY_LAST_IMPORT, 0) < 15 * 60_000L) return 0
+        }
         val n = import(ctx, db, uri)
         prefs.edit()
             .putLong(KEY_IMPORTED_MOD, modified ?: System.currentTimeMillis())
@@ -104,10 +106,18 @@ object Gadgetbridge {
         return n
     }
 
-    private fun lastModified(ctx: Context, uri: Uri): Long? = try {
+    private fun lastModified(ctx: Context, uri: Uri): Long? = fileInfo(ctx, uri)?.second
+
+    /** (rozmiar w bajtach, data zmiany) pliku eksportu — do diagnostyki. */
+    fun fileInfo(ctx: Context, uri: Uri): Pair<Long?, Long?>? = try {
         ctx.contentResolver.query(
-            uri, arrayOf(DocumentsContract.Document.COLUMN_LAST_MODIFIED), null, null, null
-        )?.use { c -> if (c.moveToFirst() && !c.isNull(0)) c.getLong(0) else null }
+            uri,
+            arrayOf(DocumentsContract.Document.COLUMN_SIZE, DocumentsContract.Document.COLUMN_LAST_MODIFIED),
+            null, null, null
+        )?.use { c ->
+            if (!c.moveToFirst()) null
+            else (if (c.isNull(0)) null else c.getLong(0)) to (if (c.isNull(1)) null else c.getLong(1))
+        }
     } catch (e: Exception) {
         null
     }

@@ -51,8 +51,14 @@ class AgentService : Service() {
     private val watchReceiver = object : BroadcastReceiver() {
         override fun onReceive(ctx: Context, intent: Intent) {
             when (intent.action) {
-                Gadgetbridge.EV_SYNC_DONE -> Gadgetbridge.requestExport(ctx)
-                Gadgetbridge.EV_EXPORT_OK -> handler.post { importWatch() }
+                Gadgetbridge.EV_SYNC_DONE -> {
+                    db.log("watch_sync", "sync_done")
+                    Gadgetbridge.requestExport(ctx)
+                }
+                Gadgetbridge.EV_EXPORT_OK -> {
+                    db.log("watch_sync", "export_ok")
+                    handler.post { importWatch() }
+                }
                 Gadgetbridge.EV_EXPORT_FAIL -> db.log("error", "watch_export")
             }
         }
