@@ -137,7 +137,11 @@ class MainActivity : Activity() {
                 "W Gadgetbridge: Ustawienia → Opcje programisty → Intent API (włącz synchronizację i eksport bazy), " +
                     "oraz Zarządzanie danymi → Auto export (ustaw plik eksportu). Potem wskaż ten sam plik tutaj."
             )
-            button("Wskaż plik eksportu Gadgetbridge") {
+            button("1. Zleć eksport w Gadgetbridge (tworzy plik)") {
+                Gadgetbridge.requestExport(this)
+                text("Wysłano. Za kilka sekund plik powinien być w wybranej lokalizacji eksportu.")
+            }
+            button("2. Wskaż plik eksportu Gadgetbridge") {
                 @Suppress("DEPRECATION")
                 startActivityForResult(
                     Intent(Intent.ACTION_OPEN_DOCUMENT).addCategory(Intent.CATEGORY_OPENABLE).setType("*/*"),
