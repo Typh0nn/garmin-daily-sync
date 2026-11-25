@@ -73,5 +73,7 @@ jobs:
               --title "Agent — najnowszy build" \
               --notes "Automatyczny build aplikacji Agent (Pixel). Instaluj tylko na własnym telefonie."
           gh release upload agent-latest agent.apk --clobber
+          # Opis wydania jest tylko informacyjny: chwilowy błąd API nie psuje buildu.
           gh release edit agent-latest \
-            --notes "Build #${{ github.run_number }} z commita ${GITHUB_SHA::7}. Instaluj tylko na własnym telefonie."
+            --notes "Build #${{ github.run_number }} z commita ${GITHUB_SHA::7}. Instaluj tylko na własnym telefonie." \
+            || echo "::warning::Nie udało się zaktualizować opisu wydania"
