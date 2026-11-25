@@ -13,7 +13,8 @@ android {
         applicationId = "pl.localagent"
         minSdk = 34
         targetSdk = 36
-        versionCode = 1
+        // CI podaje numer buildu, żeby każda wersja instalowała się jako aktualizacja.
+        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 1
         versionName = "0.1.0"
     }
 

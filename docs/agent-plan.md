@@ -33,6 +33,7 @@ czatem albo rozmową głosową.
 | Głos użytkownika | „Ty mówisz” / „inna osoba” | własny wzorzec głosu (jednorazowe nagranie, zapisany tylko wektor). Voice Match z Gemini nie ma publicznego API |
 | Kamera | opis sceny, posiłek | zdjęcie przy używaniu telefonu i z kontekstu dźwięku; bramkowanie czujnikiem zbliżeniowym, światła i orientacją |
 | Kalendarz | spotkania | `CalendarContract` (lokalnie) |
+| Lokalizacja / Wi-Fi | praca, dom, w drodze | lokalizacja w tle (rzadko, oszczędnie) + nazwa sieci Wi-Fi |
 | Zadania | Google Tasks | Google Tasks API (OAuth); jedyny odczyt z chmury, to dane użytkownika |
 | Komputer | czas pracy | później: ActivityWatch przez LAN; na start kalendarz i dźwięk klawiatury |
 | Metatracker | projekty | później, przez miejsce na kolejne źródła danych |
@@ -55,7 +56,7 @@ czatem albo rozmową głosową.
 | 1d | Treść ekranu + czarna lista; Google Tasks | opis „co robisz w telefonie” w osi dnia |
 | 2 | Tryb nauki (ok. 10 dni) → profil dnia → propozycje reguł do zatwierdzenia | profil i reguły czytelne i edytowalne |
 | 3 | Gemma 4 na TPU: rekomendacje, czat (pamiętany), rozmowa na żywo; **scenariusz spotkania** | po spotkaniu wiadomość z danymi o stresie ≤ ~3 min od jego końca |
-| 4 | Kamera kontekstowa, rozpoznawanie głosu, komputer, metatracker | — |
+| 4 | Kamera kontekstowa, rozpoznawanie głosu, komputer, metatracker; na końcu jedzenie (niski priorytet) | — |
 
 ## Blokery i ryzyka
 
@@ -69,7 +70,6 @@ czatem albo rozmową głosową.
 - **Aplikacje bankowe** mogą reagować na samo włączenie usługi ułatwień dostępu, nawet jeśli agent ich nie czyta.
 - **Gemma na TPU we własnej aplikacji:** trzeba potwierdzić, z jakim plikiem modelu i backendem działa (w AI Edge Gallery działa).
 - **Klucz podpisu APK:** przed trybem nauki potrzebny jest stały klucz. Inaczej aktualizacja wymaga reinstalacji i kasuje dane.
-- **Budowanie lokalne:** wymaga akceptacji licencji Android SDK przez użytkownika. Na razie buduje GitHub Actions.
 - **Google Tasks:** potrzebny projekt Google Cloud z klientem OAuth (tryb testowy, jeden użytkownik).
 
 ## Notatki techniczne: baza Gadgetbridge (schemat 163)
@@ -90,9 +90,18 @@ Tabele greenDAO (nazwy kolumn w UPPER_SNAKE), wspólne kolumny: `TIMESTAMP`, `DE
 
 Źródło: `GBDaoGenerator.java` w repo Gadgetbridge (Codeberg). Schemat się zmienia, więc odczyt musi tolerować brak tabel i kolumn.
 
-## Otwarte kwestie (domyślne wartości do czasu decyzji)
+## Decyzje późniejsze
 
-- Zdjęcia: **nie zapisujemy**, tylko opis.
-- Lokalizacja w tle lub Wi-Fi z pracy: **wyłączone**; wykrywanie spotkań z kalendarza i dźwięku.
+- **Jedzenie: niski priorytet.** Wykrywanie wyłącznie pasywne, robione na końcu.
+- **Zdjęcia:** nie zapisujemy, tylko opis.
+- **Lokalizacja w tle i Wi-Fi z pracy:** dozwolone. Pomagają wykrywać pracę i spotkania.
+- **Gemma 4 E2B na TPU:** ok. 773 ms na krótką wiadomość w AI Edge Gallery. To wystarcza do czatu i rozmowy na żywo; w aplikacji zmierzymy to sami.
+- **APK na GitHubie:** wydanie `agent-latest`, stały link do pobrania.
+  - Workflow uruchamia się tylko po pushu właściciela albo ręcznie. Nie reaguje na PR-y ani forki.
+  - Android przyjmie aktualizację tylko z tym samym kluczem podpisu.
+  - Przyszła samoaktualizacja: tylko z tego repo i zawsze z potwierdzeniem użytkownika.
+- **Budowanie lokalne:** licencja Android SDK zaakceptowana przez użytkownika. Nie dotyczy telefonu ani gwarancji.
+
+## Otwarte kwestie
+
 - System operacyjny komputera: nieznany (potrzebny dopiero do ActivityWatch).
-- Prędkość decode Gemmy 4 E2B na TPU (tokeny/s): do odczytania ze statystyk w AI Edge Gallery.
