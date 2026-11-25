@@ -72,6 +72,24 @@ czatem albo rozmową głosową.
 - **Budowanie lokalne:** wymaga akceptacji licencji Android SDK przez użytkownika. Na razie buduje GitHub Actions.
 - **Google Tasks:** potrzebny projekt Google Cloud z klientem OAuth (tryb testowy, jeden użytkownik).
 
+## Notatki techniczne: baza Gadgetbridge (schemat 163)
+
+Tabele greenDAO (nazwy kolumn w UPPER_SNAKE), wspólne kolumny: `TIMESTAMP`, `DEVICE_ID`, `USER_ID`.
+
+- `GARMIN_ACTIVITY_SAMPLE` — `TIMESTAMP` w **sekundach**; `HEART_RATE`, `STEPS`, `RAW_INTENSITY`, `RAW_KIND`, `DISTANCE_CM`, `ACTIVE_CALORIES`
+- `GARMIN_STRESS_SAMPLE` — `TIMESTAMP` w ms; `STRESS`
+- `GARMIN_BODY_ENERGY_SAMPLE` — `TIMESTAMP` w ms; `ENERGY` (Body Battery)
+- `GARMIN_SLEEP_STAGE_SAMPLE` — ms; `STAGE`
+- `GARMIN_SLEEP_STATS_SAMPLE` — ms; `SLEEP_SCORE` i składowe
+- `GARMIN_HRV_SUMMARY_SAMPLE` — ms; `WEEKLY_AVERAGE`, `LAST_NIGHT_AVERAGE`, `STATUS_NUM`
+- `GARMIN_HRV_VALUE_SAMPLE` — ms; `VALUE`
+- `GARMIN_SPO2_SAMPLE` — ms; `SPO2`
+- `GARMIN_RESPIRATORY_RATE_SAMPLE` — ms; `RESPIRATORY_RATE`
+- `GARMIN_HEART_RATE_RESTING_SAMPLE` — ms; `HEART_RATE`
+- `DEVICE` — `_id`, `NAME`, `IDENTIFIER` (MAC)
+
+Źródło: `GBDaoGenerator.java` w repo Gadgetbridge (Codeberg). Schemat się zmienia, więc odczyt musi tolerować brak tabel i kolumn.
+
 ## Otwarte kwestie (domyślne wartości do czasu decyzji)
 
 - Zdjęcia: **nie zapisujemy**, tylko opis.
