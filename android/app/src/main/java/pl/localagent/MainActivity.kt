@@ -71,6 +71,17 @@ class MainActivity : Activity() {
         permission("Historia aplikacji", UsageCollector.hasAccess(this)) {
             startActivity(Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS))
         }
+        if (!UsageCollector.hasAccess(this)) {
+            text(
+                "Jeśli Android pokaże „Aplikacja nie otrzymała dostępu”: " +
+                    "Informacje o aplikacji → ⋮ → „Zezwól na ograniczone ustawienia”, potem wróć tutaj."
+            )
+            button("Informacje o aplikacji") {
+                startActivity(
+                    Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName"))
+                )
+            }
+        }
         permission(
             "Praca w tle bez ograniczeń baterii",
             getSystemService(PowerManager::class.java).isIgnoringBatteryOptimizations(packageName)
