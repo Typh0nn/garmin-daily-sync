@@ -34,22 +34,18 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      # Stały klucz podpisu: aktualizacja APK instaluje się na poprzedniej wersji bez utraty danych,
-      # a Android odrzuci „aktualizację” podpisaną innym kluczem.
-      # Docelowo sekret AGENT_DEBUG_KEYSTORE_B64; do tego czasu klucz trzymany w cache Actions.
-      - name: Restore signing key (cache)
-        uses: actions/cache@v4
-        with:
-          path: ~/.android/debug.keystore
-          key: agent-debug-keystore-v1
-
-      - name: Signing key from secret (if set)
+      # Stały klucz podpisu z sekretu: aktualizacja APK instaluje się na poprzedniej wersji
+      # bez utraty danych, a Android odrzuci „aktualizację” podpisaną innym kluczem.
+      # Bez sekretu APK się buduje, ale NIE jest publikowany.
+      - name: Signing key from secret
         env:
           KS: ${{ secrets.AGENT_DEBUG_KEYSTORE_B64 }}
         run: |
           if [ -n "$KS" ]; then
-            mkdir -p ~/.android
-            echo "$KS" | base64 -d > ~/.android/debug.keystore
+            echo "$KS" | base64 -d > "$RUNNER_TEMP/agent.keystore"
+            echo "AGENT_KEYSTORE=$RUNNER_TEMP/agent.keystore" >> "$GITHUB_ENV"
+          else
+            echo "::warning::Brak sekretu AGENT_DEBUG_KEYSTORE_B64 — APK nie zostanie opublikowany."
           fi
 
       - name: Build debug APK
@@ -64,6 +60,7 @@ jobs:
       # Stały link do pobrania na telefonie:
       # https://github.com/Typh0nn/garmin-daily-sync/releases/download/agent-latest/agent.apk
       - name: Publish APK (release agent-latest)
+        if: env.AGENT_KEYSTORE != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

@@ -18,6 +18,19 @@ android {
         versionName = "0.1.0"
     }
 
+    // Stały klucz podpisu (CI: sekret AGENT_DEBUG_KEYSTORE_B64 → plik → AGENT_KEYSTORE).
+    // Bez niego build używa losowego klucza debug i nie nadaje się do aktualizacji na telefonie.
+    signingConfigs {
+        getByName("debug") {
+            System.getenv("AGENT_KEYSTORE")?.let {
+                storeFile = file(it)
+                storePassword = "android"
+                keyAlias = "androiddebugkey"
+                keyPassword = "android"
+            }
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
