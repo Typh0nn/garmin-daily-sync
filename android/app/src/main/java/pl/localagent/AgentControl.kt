@@ -14,6 +14,11 @@ object AgentControl {
 
     fun isEnabled(ctx: Context): Boolean = prefs(ctx).getBoolean("enabled", false)
 
+    /** Słuchanie otoczenia (mikrofon) — osobny przełącznik w aplikacji. */
+    fun micEnabled(ctx: Context): Boolean = prefs(ctx).getBoolean("mic_enabled", true)
+
+    fun setMicEnabled(ctx: Context, on: Boolean) = prefs(ctx).edit().putBoolean("mic_enabled", on).apply()
+
     /** Wywoływać tylko z widocznej aktywności: usługa pierwszoplanowa musi startować z pierwszego planu. */
     fun start(ctx: Context) {
         prefs(ctx).edit().putBoolean("enabled", true).apply()

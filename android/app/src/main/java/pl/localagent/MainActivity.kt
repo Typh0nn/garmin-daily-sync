@@ -42,6 +42,9 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        // Agent włączony, ale usługa nie działa (np. po restarcie telefonu) albo bez mikrofonu:
+        // otwarcie aplikacji to moment, w którym Android pozwala ją (ponownie) uruchomić.
+        if (AgentControl.isEnabled(this)) AgentControl.start(this)
         render()
     }
 
@@ -65,6 +68,9 @@ class MainActivity : Activity() {
         header("Uprawnienia")
         permission("Powiadomienia", granted(Manifest.permission.POST_NOTIFICATIONS)) {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
+        }
+        permission("Mikrofon (rozpoznawanie otoczenia, bez nagrywania)", AmbientListener.hasPermission(this)) {
+            requestPermissions(arrayOf(Manifest.permission.RECORD_AUDIO), 3)
         }
         permission("Kalendarz", CalendarReader.hasAccess(this)) {
             requestPermissions(arrayOf(Manifest.permission.READ_CALENDAR), 2)
@@ -93,6 +99,7 @@ class MainActivity : Activity() {
         }
 
         watchSection()
+        ambientSection()
 
         header("Test")
         button("Wyślij testowy popup") {
@@ -204,6 +211,39 @@ class MainActivity : Activity() {
         today.filter { it.kind == "steps" }.sumOf { it.data.toLongOrNull() ?: 0L }
             .takeIf { it > 0 }?.let { text("Kroki dziś: $it") }
         last("sleep_score")?.let { text("Wynik snu: ${it.data}") }
+    }
+
+    private fun ambientSection() {
+        header("Otoczenie (mikrofon)")
+        val micOn = AgentControl.micEnabled(this)
+        button(if (micOn) "Wyłącz słuchanie otoczenia" else "Włącz słuchanie otoczenia") {
+            AgentControl.setMicEnabled(this, !micOn)
+            if (AgentControl.isEnabled(this)) {
+                AgentControl.stop(this)
+                AgentControl.start(this)
+            }
+            render()
+        }
+        text("Dźwięk jest analizowany na bieżąco w pamięci; zapisywana jest tylko etykieta otoczenia.")
+
+        val events = AgentDb.get(this).since("audio", startOfToday())
+        val totals = LinkedHashMap<String, Long>()
+        var current: String? = null
+        var since = 0L
+        fun close(at: Long) {
+            current?.let { totals[it] = (totals[it] ?: 0L) + (at - since) }
+            current = null
+        }
+        for (e in events) {
+            when {
+                e.kind == "state" -> { close(e.ts); current = e.data; since = e.ts }
+                e.kind == "listening" && e.data == "off" -> close(e.ts)
+            }
+        }
+        current?.let { text("Teraz: $it (od ${hm.format(Date(since))})") }
+        close(System.currentTimeMillis())
+        if (totals.isEmpty()) text("Brak danych z dzisiaj.")
+        totals.entries.sortedByDescending { it.value }.forEach { (label, ms) -> text("${minutes(ms)}  $label") }
     }
 
     private fun granted(p: String) = checkSelfPermission(p) == PackageManager.PERMISSION_GRANTED

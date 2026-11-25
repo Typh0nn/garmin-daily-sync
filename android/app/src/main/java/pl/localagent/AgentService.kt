@@ -14,13 +14,16 @@ import android.os.PowerManager
 
 /**
  * Serce agenta: usługa pierwszoplanowa, która co minutę (w trybie oszczędzania
- * energii co 5 minut) zbiera dane do lokalnej osi dnia.
+ * energii co 5 minut) zbiera dane do lokalnej osi dnia, a w tle rozpoznaje otoczenie
+ * z mikrofonu (wstrzymane w trybie oszczędzania energii).
  */
 class AgentService : Service() {
 
     private lateinit var thread: HandlerThread
     private lateinit var handler: Handler
     private lateinit var db: AgentDb
+    private var ambient: AmbientListener? = null
+    private var micType = false // usługa ma typ „microphone” (nadawany tylko z pierwszego planu)
 
     private val tick = object : Runnable {
         override fun run() {
@@ -34,8 +37,7 @@ class AgentService : Service() {
             when (intent.action) {
                 PowerManager.ACTION_POWER_SAVE_MODE_CHANGED -> {
                     db.log("system", "power_save", powerSave().toString())
-                    getSystemService(NotificationManager::class.java)
-                        .notify(Notifier.ID_STATUS, Notifier.status(ctx, powerSave()))
+                    handler.post { updateMic() }
                 }
                 NotificationManager.ACTION_INTERRUPTION_FILTER_CHANGED -> {
                     val quiet = Notifier.isQuiet(ctx)
@@ -67,15 +69,7 @@ class AgentService : Service() {
     override fun onCreate() {
         super.onCreate()
         db = AgentDb.get(this)
-        try {
-            startForeground(
-                Notifier.ID_STATUS,
-                Notifier.status(this, powerSave()),
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
-            )
-        } catch (e: Exception) {
-            // Np. restart przez system z tła — Android może na to nie pozwolić.
-            db.log("error", "start_foreground", e.toString())
+        if (!startInForeground()) {
             Notifier.stopped(this)
             AgentControl.prefs(this).edit().putBoolean("enabled", false).apply()
             stopSelf()
@@ -83,6 +77,7 @@ class AgentService : Service() {
         }
         thread = HandlerThread("agent").apply { start() }
         handler = Handler(thread.looper)
+        ambient = AmbientListener(this, handler, db)
         registerReceiver(
             systemReceiver,
             IntentFilter().apply {
@@ -101,14 +96,80 @@ class AgentService : Service() {
             Context.RECEIVER_EXPORTED
         )
         db.log("agent", "started")
+        handler.post { updateMic() }
         handler.post(tick)
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
+    /**
+     * Mikrofon wymaga uruchomienia z pierwszego planu. Gdy to niemożliwe (np. restart przez system),
+     * agent działa dalej bez mikrofonu, dopóki użytkownik nie otworzy aplikacji.
+     */
+    private fun startInForeground(): Boolean {
+        val wantMic = AgentControl.micEnabled(this) && AmbientListener.hasPermission(this)
+        if (wantMic) {
+            try {
+                startForeground(
+                    Notifier.ID_STATUS, Notifier.status(this, "Uruchamiam…"),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                )
+                micType = true
+                return true
+            } catch (e: Exception) {
+                db.log("error", "mic_foreground", e.toString())
+            }
+        }
+        return try {
+            startForeground(
+                Notifier.ID_STATUS, Notifier.status(this, "Uruchamiam…"),
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE
+            )
+            true
+        } catch (e: Exception) {
+            db.log("error", "start_foreground", e.toString())
+            false
+        }
+    }
+
+    /** Włącza/wyłącza nasłuch zależnie od trybu oszczędzania energii i aktualizuje status. */
+    private fun updateMic() {
+        val listener = ambient ?: return
+        val detail = when {
+            !AgentControl.micEnabled(this) -> "Obserwuję (mikrofon wyłączony)"
+            !micType -> "Obserwuję. Mikrofon: otwórz aplikację, aby wznowić"
+            powerSave() -> { listener.stop(); "Oszczędzanie energii: mikrofon wstrzymany" }
+            else -> try {
+                if (listener.start()) "Obserwuję, słucham otoczenia" else "Obserwuję (brak zgody na mikrofon)"
+            } catch (e: Exception) {
+                db.log("error", "ambient_start", e.toString())
+                "Obserwuję (błąd mikrofonu)"
+            }
+        }
+        getSystemService(NotificationManager::class.java).notify(Notifier.ID_STATUS, Notifier.status(this, detail))
+    }
+
+    /** Ponowny start z otwartej aplikacji: okazja, by dołożyć mikrofon, jeśli wcześniej się nie dało. */
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (::handler.isInitialized && !micType &&
+            AgentControl.micEnabled(this) && AmbientListener.hasPermission(this)
+        ) {
+            try {
+                startForeground(
+                    Notifier.ID_STATUS, Notifier.status(this, "Wznawiam mikrofon…"),
+                    ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE or ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE
+                )
+                micType = true
+            } catch (e: Exception) {
+                db.log("error", "mic_foreground", e.toString())
+            }
+            handler.post { updateMic() }
+        }
+        return START_STICKY
+    }
 
     override fun onDestroy() {
         if (::thread.isInitialized) {
             handler.removeCallbacksAndMessages(null)
+            ambient?.stop()
             unregisterReceiver(systemReceiver)
             unregisterReceiver(watchReceiver)
             thread.quitSafely()

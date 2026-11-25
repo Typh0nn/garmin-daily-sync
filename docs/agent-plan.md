@@ -81,6 +81,16 @@ czatem albo rozmową głosową.
 4. Agent co 15 min (w trybie oszczędzania co godzinę) wysyła `ACTIVITY_SYNC`, potem `TRIGGER_EXPORT`, a po `DATABASE_EXPORT_SUCCESS` importuje nowe próbki.
    Kopia bazy jest usuwana zaraz po imporcie.
 
+## Otoczenie z mikrofonu (Etap 1c)
+
+- **Model:** YAMNet (MediaPipe Audio 1.2.3, w assets bez kompresji). Okna ~1 s; stan zmienia się, gdy ta sama etykieta wygra 3 z 4 ostatnich okien.
+- **Etykiety:** rozmowa, TV/radio, pisanie na klawiaturze, kuchnia, muzyka, pojazd/ulica, cisza, chrapanie, telefon (rozmowa telefoniczna), mikrofon zajęty, inne.
+  Mapowanie jest w `AmbientListener.toLabel`, testy w `AmbientLabelTest`.
+- **Zapis:** do bazy trafiają tylko zmiany stanu (`audio/state`). Dźwięku nie zapisujemy.
+- **Usługa:** typ `specialUse|microphone`. Mikrofon można włączyć tylko z otwartej aplikacji.
+  Po restarcie wystarczy otworzyć Agenta. W trybie oszczędzania energii nasłuch jest wstrzymany.
+- **APK:** tylko arm64. Biblioteki MediaPipe są wyrównane do stron 16 KB.
+
 ## Notatki techniczne: baza Gadgetbridge (schemat 163)
 
 Tabele greenDAO (nazwy kolumn w UPPER_SNAKE), wspólne kolumny: `TIMESTAMP`, `DEVICE_ID`, `USER_ID`.

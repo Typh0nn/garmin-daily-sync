@@ -39,11 +39,11 @@ object Notifier {
         )
     }
 
-    fun status(ctx: Context, powerSave: Boolean): Notification =
+    fun status(ctx: Context, detail: String): Notification =
         Notification.Builder(ctx, CH_STATUS)
             .setSmallIcon(R.drawable.ic_agent)
             .setContentTitle("Agent działa")
-            .setContentText(if (powerSave) "Oszczędzanie energii: ograniczone działanie" else "Obserwuję")
+            .setContentText(detail)
             .setOngoing(true)
             .setContentIntent(openApp(ctx))
             .addAction(action(ctx, "Wyłącz", broadcast(ctx, ACTION_STOP, ID_STATUS)))
